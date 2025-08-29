@@ -1,0 +1,85 @@
+# overview
+
+**projectName**: School Grade Tracking Web App
+**projectDescription**: A web application designed for school environments to track and manage students' grades, allowing teachers to post test scores, assignments, and other relevant information.
+**preferredTechStack**: React, Node.js, PostgreSQL
+**coreFeatures**:
+  - User Authentication
+  - Database Integration
+  - Admin Dashboard
+  - Search Functionality
+  - File Upload/Storage
+  - Email Notifications
+**preferredIntegrations**:
+  - Auth0 (Authentication)
+
+# detailedRequirements
+
+**userAuthentication**:
+  **description**: Implement secure user authentication for teachers and admin staff using Auth0.
+  **requirements**:
+    - Integration with Auth0 for user login and signup.
+    - Role-based access control to differentiate between teachers and admins.
+**databaseIntegration**:
+  **description**: PostgreSQL database setup to store and manage student grades and related data.
+  **requirements**:
+    - Database schema design to include tables for students, grades, assignments, and users.
+    - Efficient querying for retrieving and updating student records.
+**adminDashboard**:
+  **description**: A dashboard for admins to manage the application, view reports, and access user data.
+  **requirements**:
+    - Data visualization for grade statistics.
+    - User management features to add, remove, or update user roles.
+**searchFunctionality**:
+  **description**: Search capability to quickly find students, grades, or assignments.
+  **requirements**:
+    - Implement full-text search in PostgreSQL for efficient querying.
+    - Autocomplete suggestions for user input.
+**fileUploadStorage**:
+  **description**: Allow teachers to upload and store files related to assignments.
+  **requirements**:
+    - Integration with a cloud storage solution (e.g., AWS S3) for file storage.
+    - File validation and size limits for uploads.
+**emailNotifications**:
+  **description**: Email notifications for teachers and students about assignment updates or new grades.
+  **requirements**:
+    - Integration with an email service provider (e.g., SendGrid).
+    - Customizable email templates for different notifications.
+
+# recommendedImplementation
+
+**reactNodePostgreSQL**:
+  **react**: Use React for building the frontend UI, focusing on component reusability and state management.
+  **node**: Use Node.js for the backend server, handling business logic and API endpoints.
+  **postgresql**: Utilize PostgreSQL for data persistence, leveraging its relational database capabilities.
+
+# integrationSetupInstructions
+
+**auth0**:
+  **steps**:
+    - Create an Auth0 account and set up a new application.
+    - Configure the application settings and obtain the client ID and secret.
+    - Integrate Auth0 with the React frontend using the Auth0 React SDK.
+    - Set up API authorization in Node.js using the Auth0 SDK for Express.
+
+# changeManagementInstructions
+
+**changelogSetup**:
+  **createFile**: Create a CHANGELOG.md file in the project root directory.
+  **template**:
+    **format**: Each entry should include sections for Added, Changed, Fixed, and Removed items.
+    **example**:
+      **version**: v1.0.0
+      **date**: YYYY-MM-DD
+      **added**:
+        - Initial project setup with React, Node.js, and PostgreSQL.
+        - User authentication using Auth0.
+      **changed**:
+
+      **fixed**:
+
+      **removed**:
+
+  **fileCommentInstruction**: IMPORTANT: Before modifying this file, please update CHANGELOG.md with a summary of your changes. Also, make clear comments about every change in this file and what it was replacing so that we don't end up trying the same fixes repeatedly.
+  **documentationRequirement**: All changes must be documented in the changelog and properly dated.
+

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack - Grade Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    'sans': ['Inter', 'system-ui', 'sans-serif'],
+                },
+                colors: {
+                    'primary': '#2563EB',
+                    'secondary': '#10B981',
+                    'accent': '#F59E0B',
+                    'gray-50': '#F8FAFC',
+                    'gray-900': '#1F2937',
+                }
+            }
+        }
+    };
+    </script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- @COMPONENT: MainLayout -->
+    <!-- Navigation Header -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 fixed w-full top-0 z-50" data-mock="true">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-2xl font-bold text-primary">SchoolTrack</h1>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="#" class="text-primary bg-primary/10 px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
+                            <a href="#" class="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Students</a>
+                            <a href="#" class="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Grades</a>
+                            <a href="#" class="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Assignments</a>
+                            <a href="#" class="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Reports</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-end max-w-md">
+                    <div class="w-full">
+                        <label for="search" class="sr-only">Search</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input id="search" name="search" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary text-sm" placeholder="Search students, grades..." type="search" data-mock="true">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <button class="bg-white p-1 rounded-full text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" data-mock="true">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-gray-900" data-bind="user.name">Ms. Johnson</p>
+                            <p class="text-xs text-gray-500" data-bind="user.role">Teacher</p>
+                        </div>
+                        <img class="h-8 w-8 rounded-full" src="https://pixabay.com/get/g8da44aefede6993fceb821eab79a30309a60f5ec2f1120ba3fb13e1a3386e6757abbc37fc7f4e2e0540e26958f4ed7cba670581cb8799154999c55b2621b5e59_1280.jpg" alt="User avatar" data-mock="true">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- @END_COMPONENT: MainLayout -->
+
+    <!-- Main Content Area -->
+    <div class="pt-16 min-h-screen">
+        <!-- @COMPONENT: DashboardOverview -->
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <!-- Dashboard Header -->
+            <div class="px-4 py-6 sm:px-0">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+                        <p class="mt-1 text-sm text-gray-600">Welcome back, Ms. Johnson. Here's what's happening with your classes.</p>
+                    </div>
+                    <div class="mt-4 sm:mt-0 flex space-x-3">
+                        <button class="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" data-event="click:handleAddStudent" data-mock="true">
+                            <i class="fas fa-plus mr-2"></i>Add Student
+                        </button>
+                        <button class="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" data-event="click:handleAddAssignment" data-mock="true">
+                            <i class="fas fa-plus mr-2"></i>New Assignment
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="px-4 py-6 sm:px-0">
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    <!-- Total Students Card -->
+                    <div class="bg-white overflow-hidden shadow rounded-lg" data-mock="true">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-users text-2xl text-primary"></i>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Total Students</dt>
+                                        <dd class="text-3xl font-semibold text-gray-900" data-bind="stats.totalStudents">234</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Average Grade Card -->
+                    <div class="bg-white overflow-hidden shadow rounded-lg" data-mock="true">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-chart-line text-2xl text-secondary"></i>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Average Grade</dt>
+                                        <dd class="text-3xl font-semibold text-gray-900" data-bind="stats.averageGrade">B+</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assignments Due Card -->
+                    <div class="bg-white overflow-hidden shadow rounded-lg" data-mock="true">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-clock text-2xl text-accent"></i>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Due This Week</dt>
+                                        <dd class="text-3xl font-semibold text-gray-900" data-bind="stats.assignmentsDue">12</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Classes Card -->
+                    <div class="bg-white overflow-hidden shadow rounded-lg" data-mock="true">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-book text-2xl text-purple-600"></i>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Active Classes</dt>
+                                        <dd class="text-3xl font-semibold text-gray-900" data-bind="stats.activeClasses">6</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: DashboardOverview -->
+
+            <!-- Recent Activity Section -->
+            <!-- @COMPONENT: RecentActivity -->
+            <div class="px-4 py-6 sm:px-0">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Recent Grades -->
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Recent Grades</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="space-y-4">
+                                <!-- @MAP: recentGrades.map(grade => ( -->
+                                <div class="flex items-center justify-between" data-mock="true">
+                                    <div class="flex items-center space-x-3">
+                                        <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" alt="Student photo">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900" data-bind="grade.studentName">Alex Thompson</p>
+                                            <p class="text-sm text-gray-500" data-bind="grade.assignment">Math Quiz #3</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm font-semibold text-secondary" data-bind="grade.score">92%</p>
+                                        <p class="text-xs text-gray-400" data-bind="grade.date">2 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between" data-mock="true">
+                                    <div class="flex items-center space-x-3">
+                                        <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" alt="Student photo">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900" data-bind="grade.studentName">Sarah Wilson</p>
+                                            <p class="text-sm text-gray-500" data-bind="grade.assignment">History Essay</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm font-semibold text-secondary" data-bind="grade.score">88%</p>
+                                        <p class="text-xs text-gray-400" data-bind="grade.date">5 hours ago</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between" data-mock="true">
+                                    <div class="flex items-center space-x-3">
+                                        <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" alt="Student photo">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900" data-bind="grade.studentName">Michael Chen</p>
+                                            <p class="text-sm text-gray-500" data-bind="grade.assignment">Science Lab Report</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm font-semibold text-accent" data-bind="grade.score">76%</p>
+                                        <p class="text-xs text-gray-400" data-bind="grade.date">1 day ago</p>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP )) -->
+                            </div>
+                            <div class="mt-4">
+                                <a href="#" class="text-primary text-sm font-medium hover:text-primary/80">View all grades →</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Assignments -->
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Upcoming Assignments</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="space-y-4">
+                                <!-- @MAP: upcomingAssignments.map(assignment => ( -->
+                                <div class="border-l-4 border-primary pl-4" data-mock="true">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900" data-bind="assignment.title">Chapter 7 Quiz</p>
+                                            <p class="text-sm text-gray-500" data-bind="assignment.subject">Mathematics</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-sm font-semibold text-gray-900" data-bind="assignment.dueDate">Tomorrow</p>
+                                            <p class="text-xs text-gray-500" data-bind="assignment.submissions">24/28 submitted</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border-l-4 border-accent pl-4" data-mock="true">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900" data-bind="assignment.title">Book Report</p>
+                                            <p class="text-sm text-gray-500" data-bind="assignment.subject">English Literature</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-sm font-semibold text-gray-900" data-bind="assignment.dueDate">Friday</p>
+                                            <p class="text-xs text-gray-500" data-bind="assignment.submissions">18/28 submitted</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border-l-4 border-secondary pl-4" data-mock="true">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900" data-bind="assignment.title">Lab Experiment</p>
+                                            <p class="text-sm text-gray-500" data-bind="assignment.subject">Physics</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-sm font-semibold text-gray-900" data-bind="assignment.dueDate">Next Week</p>
+                                            <p class="text-xs text-gray-500" data-bind="assignment.submissions">12/25 submitted</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP )) -->
+                            </div>
+                            <div class="mt-4">
+                                <a href="#" class="text-primary text-sm font-medium hover:text-primary/80">View all assignments →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: RecentActivity -->
+
+            <!-- Student Management Section -->
+            <!-- @COMPONENT: StudentManagement -->
+            <div class="px-4 py-6 sm:px-0">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium text-gray-900">Student Roster</h3>
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <select class="block w-full pl-3 pr-10 py-2 text-sm border border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-md" data-mock="true">
+                                        <option>All Classes</option>
+                                        <option>Math 101</option>
+                                        <option>History 201</option>
+                                        <option>Science 301</option>
+                                    </select>
+                                </div>
+                                <button class="bg-primary text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-primary/90" data-event="click:handleExport" data-mock="true">
+                                    <i class="fas fa-download mr-1"></i>Export
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" data-event="click:sortBy" data-sort="name">
+                                        Name <i class="fas fa-sort ml-1"></i>
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" data-event="click:sortBy" data-sort="studentId">
+                                        Student ID <i class="fas fa-sort ml-1"></i>
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" data-event="click:sortBy" data-sort="grade">
+                                        Current Grade <i class="fas fa-sort ml-1"></i>
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Last Activity
+                                    </th>
+                                    <th scope="col" class="relative px-6 py-3">
+                                        <span class="sr-only">Actions</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- @MAP: students.map(student => ( -->
+                                <tr class="hover:bg-gray-50" data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" alt="Student photo">
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900" data-bind="student.name">Alex Thompson</div>
+                                                <div class="text-sm text-gray-500" data-bind="student.email">alex.thompson@school.edu</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-bind="student.studentId">ST-2024-001</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" data-bind="student.currentGrade">
+                                            A- (92%)
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="student.lastActivity">2 hours ago</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex items-center space-x-2 justify-end">
+                                            <button class="text-primary hover:text-primary/80" data-event="click:viewStudent" data-mock="true">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="text-gray-600 hover:text-gray-800" data-event="click:editStudent" data-mock="true">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-800" data-event="click:removeStudent" data-mock="true">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-gray-50" data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" alt="Student photo">
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900" data-bind="student.name">Sarah Wilson</div>
+                                                <div class="text-sm text-gray-500" data-bind="student.email">sarah.wilson@school.edu</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-bind="student.studentId">ST-2024-002</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" data-bind="student.currentGrade">
+                                            B+ (88%)
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="student.lastActivity">5 hours ago</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex items-center space-x-2 justify-end">
+                                            <button class="text-primary hover:text-primary/80" data-event="click:viewStudent" data-mock="true">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="text-gray-600 hover:text-gray-800" data-event="click:editStudent" data-mock="true">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-800" data-event="click:removeStudent" data-mock="true">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-gray-50" data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150" alt="Student photo">
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900" data-bind="student.name">Michael Chen</div>
+                                                <div class="text-sm text-gray-500" data-bind="student.email">michael.chen@school.edu</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-bind="student.studentId">ST-2024-003</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800" data-bind="student.currentGrade">
+                                            C+ (76%)
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-bind="student.lastActivity">1 day ago</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex items-center space-x-2 justify-end">
+                                            <button class="text-primary hover:text-primary/80" data-event="click:viewStudent" data-mock="true">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="text-gray-600 hover:text-gray-800" data-event="click:editStudent" data-mock="true">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="text-red-600 hover:text-red-800" data-event="click:removeStudent" data-mock="true">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- @END_MAP )) -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination -->
+                    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" data-mock="true">
+                                Previous
+                            </button>
+                            <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" data-mock="true">
+                                Next
+                            </button>
+                        </div>
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700">
+                                    Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">234</span> results
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                                    <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50" data-mock="true">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button class="bg-primary border-primary text-white relative inline-flex items-center px-4 py-2 border text-sm font-medium" data-mock="true">1</button>
+                                    <button class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium" data-mock="true">2</button>
+                                    <button class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium" data-mock="true">3</button>
+                                    <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50" data-mock="true">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: StudentManagement -->
+
+            <!-- Grade Entry Modal -->
+            <!-- @COMPONENT: GradeEntryModal -->
+            <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden" id="grade-modal" data-mock="true">
+                <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                    <div class="flex items-center justify-between pb-3 border-b">
+                        <h3 class="text-lg font-medium text-gray-900">Add New Grade</h3>
+                        <button class="text-gray-400 hover:text-gray-600" data-event="click:closeModal" data-mock="true">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form class="mt-3">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Student</label>
+                            <select class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" data-mock="true">
+                                <option>Select a student...</option>
+                                <option>Alex Thompson</option>
+                                <option>Sarah Wilson</option>
+                                <option>Michael Chen</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Assignment</label>
+                            <select class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" data-mock="true">
+                                <option>Select an assignment...</option>
+                                <option>Math Quiz #3</option>
+                                <option>History Essay</option>
+                                <option>Science Lab Report</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Grade</label>
+                            <input type="number" min="0" max="100" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" placeholder="Enter grade (0-100)" data-mock="true">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Comments (Optional)</label>
+                            <textarea rows="3" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" placeholder="Add feedback or comments..." data-mock="true"></textarea>
+                        </div>
+                        <div class="flex items-center justify-end space-x-3">
+                            <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" data-event="click:closeModal" data-mock="true">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" data-event="click:saveGrade" data-mock="true">
+                                Save Grade
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: GradeEntryModal -->
+
+        </main>
+    </div>
+
+    <!-- Mobile Navigation Menu (Hidden by default) -->
+    <div class="sm:hidden fixed inset-0 z-40 bg-gray-600 bg-opacity-50 hidden" id="mobile-menu-overlay" data-mock="true">
+        <nav class="relative bg-white w-64 h-full shadow-xl">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <h1 class="text-xl font-bold text-primary">SchoolTrack</h1>
+                <button class="text-gray-400 hover:text-gray-600" data-event="click:closeMobileMenu" data-mock="true">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <div class="space-y-2">
+                    <a href="#" class="block px-3 py-2 text-base font-medium text-primary bg-primary/10 rounded-md">Dashboard</a>
+                    <a href="#" class="block px-3 py-2 text-base font-medium text-gray-600 hover:text-primary hover:bg-gray-50 rounded-md">Students</a>
+                    <a href="#" class="block px-3 py-2 text-base font-medium text-gray-600 hover:text-primary hover:bg-gray-50 rounded-md">Grades</a>
+                    <a href="#" class="block px-3 py-2 text-base font-medium text-gray-600 hover:text-primary hover:bg-gray-50 rounded-md">Assignments</a>
+                    <a href="#" class="block px-3 py-2 text-base font-medium text-gray-600 hover:text-primary hover:bg-gray-50 rounded-md">Reports</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+    (function() {
+        // TODO: Implement business logic, API calls, or state management
+
+        // Basic UI interactions for demo purposes
+        // In production, these would be replaced with proper React event handlers
+
+        // Mobile menu toggle
+        const mobileMenuBtn = document.querySelector('[data-event="click:toggleMobileMenu"]');
+        const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+        
+        // Modal interactions
+        const gradeModal = document.getElementById('grade-modal');
+        
+        // Simulate sorting functionality
+        const sortButtons = document.querySelectorAll('[data-event="click:sortBy"]');
+        sortButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // TODO: Implement actual sorting logic
+                console.log('Sort by:', this.dataset.sort);
+            });
+        });
+
+        // Simulate form submissions
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                // TODO: Implement form validation and submission
+                console.log('Form submitted');
+            });
+        });
+
+        // Search functionality placeholder
+        const searchInput = document.getElementById('search');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                // TODO: Implement search functionality
+                console.log('Search:', this.value);
+            });
+        }
+    })();
+    </script>
+</body>
+</html>
