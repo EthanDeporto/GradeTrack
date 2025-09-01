@@ -6,9 +6,7 @@ import Layout from "@/components/Layout";
 import DashboardStats from "@/components/DashboardStats";
 import RecentActivity from "@/components/RecentActivity";
 import StudentTable from "@/components/StudentTable";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { isUnauthorizedError } from "@/lib/authUtils";
+
 import type {
   StudentWithGrades,
   GradeWithDetails,
@@ -69,9 +67,7 @@ export default function Dashboard() {
   });
 
   if (!isAuthenticated || isLoading) return null;
-
-  const handleAddStudent = () => console.log("Add student");
-  const handleAddAssignment = () => console.log("Add assignment");
+  
   const handleViewStudent = (student: StudentWithGrades) => console.log("View student:", student);
   const handleEditStudent = (student: StudentWithGrades) => console.log("Edit student:", student);
   const handleDeleteStudent = (student: StudentWithGrades) => console.log("Delete student:", student);
@@ -91,15 +87,7 @@ export default function Dashboard() {
                 Welcome back, {user?.firstName}. Here's what's happening with your classes.
               </p>
             </div>
-            <div className="mt-4 sm:mt-0 flex space-x-3">
-              <Button onClick={handleAddStudent} data-testid="add-student-button">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Student
-              </Button>
-              <Button variant="outline" onClick={handleAddAssignment} data-testid="add-assignment-button">
-                <Plus className="h-4 w-4 mr-2" />
-                New Assignment
-              </Button>
+            <div className="mt-4 sm:mt-0 flex space-x-3">  
             </div>
           </div>
         </div>

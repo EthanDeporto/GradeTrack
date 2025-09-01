@@ -130,10 +130,14 @@ app.post('/api/login', passport.authenticate('local'), (req, res) => {
   res.json({ success: true, user: req.user });
 });
 
-app.post('/api/logout', (req, res) => {
+app.post('/api/logout', (req, res, next) => {
   req.logout((err) => {
-    if (err) return res.status(500).json({ message: 'Logout failed' });
-    res.json({ success: true });
+    if (err) return next(err);
+
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid'); // clear session cookie
+      res.json({ success: true });    // respond with success
+    });
   });
 });
 

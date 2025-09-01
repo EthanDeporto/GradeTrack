@@ -8,7 +8,7 @@ import bcrypt from "bcrypt";
 
 // Simple local authentication for development
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const sessionTtl = 5 * 60 * 1000; // 1 week
   
   // Use memory store if no DATABASE_URL for simplicity
   if (!process.env.DATABASE_URL) {

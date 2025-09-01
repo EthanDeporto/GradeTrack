@@ -435,8 +435,8 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(classes, eq(assignments.classId, classes.id))
       .where(classConditions.length > 0 ? and(...classConditions) : undefined);
 
-    const avgGrade = avgGradeQuery[0]?.avg || 0;
-    const averageGrade = this.getLetterGrade(avgGrade);
+    const avgGrade = avgGradeQuery[0]?.avg;
+    const averageGrade = avgGrade != null ? this.getLetterGrade(avgGrade) : "-";
 
     const nowStr = new Date().toISOString();
     const weekFromNowStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days ahead
