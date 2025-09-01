@@ -30,11 +30,11 @@ function Router() {
           </div>
         </Route>
       ) : !isAuthenticated ? (
-        <>
-          <Route path="/login" component={isLocalAuth ? Login : Landing} />
-          <Route path="/" component={isLocalAuth ? Login : Landing} />
-        </>
-      ) : (
+  <>
+    <Route path="/login" component={Login} />
+    <Route path="/" component={Landing} />
+  </>
+) : (
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/students" component={Students} />

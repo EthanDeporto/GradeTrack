@@ -1,8 +1,11 @@
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, TrendingUp, BookOpen, Award } from "lucide-react";
 
 export default function Landing() {
+  const [, setLocation] = useLocation();
+
   const features = [
     {
       icon: Users,
@@ -40,7 +43,7 @@ export default function Landing() {
           <Button
             size="lg"
             className="text-lg px-8 py-4"
-            onClick={() => window.location.href = "/api/login"}
+            onClick={() => setLocation("/login")}
             data-testid="login-button"
           >
             Get Started
@@ -79,7 +82,7 @@ export default function Landing() {
               </p>
               <Button
                 size="lg"
-                onClick={() => window.location.href = "/api/login"}
+                onClick={() => setLocation("/login")}
                 data-testid="cta-button"
               >
                 Sign In to Continue
