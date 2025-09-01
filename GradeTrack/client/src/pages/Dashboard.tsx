@@ -9,13 +9,24 @@ import StudentTable from "@/components/StudentTable";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import type { StudentWithGrades, GradeWithDetails, AssignmentWithDetails } from "@shared/schema";
+import type {
+  StudentWithGrades,
+  GradeWithDetails,
+  AssignmentWithDetails,
+} from "@shared/schema";
+
+type DashboardStatsData = {
+  totalStudents: number;
+  averageGrade: string;
+  assignmentsDue: number;
+  activeClasses: number;
+};
 
 export default function Dashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  // Redirect to home if not authenticated
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -26,12 +37,11 @@ export default function Dashboard() {
       setTimeout(() => {
         window.location.href = "/api/login";
       }, 500);
-      return;
     }
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch dashboard stats
-  const { data: stats, isLoading: loadingStats } = useQuery({
+  const { data: stats, isLoading: loadingStats } = useQuery<DashboardStatsData>({
     queryKey: ["/api/dashboard/stats"],
     retry: false,
     enabled: isAuthenticated,
@@ -58,35 +68,14 @@ export default function Dashboard() {
     enabled: isAuthenticated,
   });
 
-  if (!isAuthenticated || isLoading) {
-    return null;
-  }
+  if (!isAuthenticated || isLoading) return null;
 
-  const handleAddStudent = () => {
-    // TODO: Open student modal
-    console.log("Add student");
-  };
-
-  const handleAddAssignment = () => {
-    // TODO: Open assignment modal
-    console.log("Add assignment");
-  };
-
-  const handleViewStudent = (student: StudentWithGrades) => {
-    console.log("View student:", student);
-  };
-
-  const handleEditStudent = (student: StudentWithGrades) => {
-    console.log("Edit student:", student);
-  };
-
-  const handleDeleteStudent = (student: StudentWithGrades) => {
-    console.log("Delete student:", student);
-  };
-
-  const handleExport = () => {
-    console.log("Export data");
-  };
+  const handleAddStudent = () => console.log("Add student");
+  const handleAddAssignment = () => console.log("Add assignment");
+  const handleViewStudent = (student: StudentWithGrades) => console.log("View student:", student);
+  const handleEditStudent = (student: StudentWithGrades) => console.log("Edit student:", student);
+  const handleDeleteStudent = (student: StudentWithGrades) => console.log("Delete student:", student);
+  const handleExport = () => console.log("Export data");
 
   return (
     <Layout>
@@ -117,14 +106,14 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="px-4 py-6 sm:px-0">
-          <DashboardStats data={stats} />
+          <DashboardStats data={stats ?? undefined} />
         </div>
 
         {/* Recent Activity Section */}
         <div className="px-4 py-6 sm:px-0">
-          <RecentActivity 
-            recentGrades={recentGrades} 
-            upcomingAssignments={upcomingAssignments} 
+          <RecentActivity
+            recentGrades={recentGrades}
+            upcomingAssignments={upcomingAssignments}
           />
         </div>
 

@@ -3,37 +3,34 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isLocalDevelopment } from "./authConfig";
 import { 
-  insertStudentSchema, 
-  insertClassSchema, 
-  insertAssignmentSchema, 
+  insertStudentSchema,
+  insertClassSchema,
+  insertAssignmentSchema,
   insertGradeSchema,
-  insertEnrollmentSchema 
+  insertEnrollmentSchema
 } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
+  // Setup authentication & session
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      // Handle both local and Replit auth
-      const userId = isLocalDevelopment ? req.user.id : req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
+  // -------------------------
+  // Dashboard route
+  // -------------------------
+  app.get("/dashboard", isAuthenticated, (req: any, res) => {
+    res.render("dashboard", { user: req.user });
   });
 
-  // Dashboard routes
+
+  // -------------------------
+  // Dashboard API routes
+  // -------------------------
   app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {
     try {
       const userId = isLocalDevelopment ? req.user.id : req.user.claims.sub;
       const user = await storage.getUser(userId);
-      const teacherId = user?.role === 'admin' ? undefined : userId;
+      const teacherId = req.user?.role === 'admin' ? undefined : req.user?.Id;
       const stats = await storage.getDashboardStats(teacherId);
       res.json(stats);
     } catch (error) {
@@ -44,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/dashboard/recent-grades", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = isLocalDevelopment ? req.user.id : req.user.claims.sub;
       const user = await storage.getUser(userId);
       const teacherId = user?.role === 'admin' ? undefined : userId;
       const limit = parseInt(req.query.limit as string) || 10;
@@ -58,7 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/dashboard/upcoming-assignments", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = isLocalDevelopment ? req.user.id : req.user.claims.sub;
       const user = await storage.getUser(userId);
       const teacherId = user?.role === 'admin' ? undefined : userId;
       const limit = parseInt(req.query.limit as string) || 10;
@@ -70,17 +67,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // -------------------------
   // Student routes
+  // -------------------------
   app.get("/api/students", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      const teacherId = user?.role === 'admin' ? undefined : userId;
+      const teacherId = req.user?.role === "admin" ? undefined : req.user?.role.id;
       const searchQuery = req.query.search as string;
       const students = await storage.getStudents(teacherId, searchQuery);
       res.json(students);
     } catch (error) {
-      console.error("Error fetching students:", error);
+      console.error(error);
       res.status(500).json({ message: "Failed to fetch students" });
     }
   });
@@ -88,9 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/students/:id", isAuthenticated, async (req, res) => {
     try {
       const student = await storage.getStudent(req.params.id);
-      if (!student) {
-        return res.status(404).json({ message: "Student not found" });
-      }
+      if (!student) return res.status(404).json({ message: "Student not found" });
       res.json(student);
     } catch (error) {
       console.error("Error fetching student:", error);
@@ -137,18 +132,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Class routes
-  app.get("/api/classes", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      const teacherId = user?.role === 'admin' ? undefined : userId;
-      const classes = await storage.getClasses(teacherId);
-      res.json(classes);
-    } catch (error) {
-      console.error("Error fetching classes:", error);
-      res.status(500).json({ message: "Failed to fetch classes" });
-    }
-  });
+ app.get("/api/classes", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user?.id || req.user?.claims?.sub;
+    if (!userId) return res.status(401).json({ message: "User not authenticated" });
+
+    const user = await storage.getUser(userId);
+    const teacherId = user?.role === 'admin' ? undefined : userId;
+    const classes = await storage.getClasses(teacherId);
+    res.json(classes);
+  } catch (error) {
+    console.error("Error fetching classes:", error);
+    res.status(500).json({ message: "Failed to fetch classes" });
+  }
+});
 
   app.get("/api/classes/:id", isAuthenticated, async (req, res) => {
     try {
