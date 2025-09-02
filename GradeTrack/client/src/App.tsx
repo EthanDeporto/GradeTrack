@@ -12,9 +12,11 @@ import AdminDashboard from "@/pages/Dashboard";
 import StudentDashboard from "@/pages/StudentDashboard";
 import Students from "@/pages/Students";
 import Grades from "@/pages/Grades";
+import Classes from "@/pages/Classes"
 import Assignments from "@/pages/Assignments";
 import StudentGrades from "@/pages/StudentGrades"
 import StudentAssignments from "@/pages/StudentAssignments";
+
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
 const isLocalAuth = !import.meta.env.VITE_REPLIT_DOMAINS;
@@ -47,6 +49,7 @@ const isLocalAuth = !import.meta.env.VITE_REPLIT_DOMAINS;
         <Route path="/students" component={Students} />
         <Route path="/grades" component={Grades} />
         <Route path="/assignments" component={Assignments} />
+        <Route path="/classes" component={Classes} />
         <Route component={NotFound} />
       </Switch>
     );

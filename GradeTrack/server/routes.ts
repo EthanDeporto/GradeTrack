@@ -162,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/classes", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const classData = insertClassSchema.parse({
         ...req.body,
         teacherId: userId,
@@ -227,19 +227,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/assignments", isAuthenticated, async (req, res) => {
-    try {
-      const assignmentData = insertAssignmentSchema.parse(req.body);
-      const assignment = await storage.createAssignment(assignmentData);
-      res.status(201).json(assignment);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid assignment data", errors: error.errors });
-      }
-      console.error("Error creating assignment:", error);
-      res.status(500).json({ message: "Failed to create assignment" });
+ app.post("/api/assignments", isAuthenticated, async (req, res) => {
+  try {
+    console.log("Assignment payload:", req.body, "Query classId:", req.query.classId);
+
+    const assignmentData = insertAssignmentSchema.parse({
+      ...req.body,
+      classId: req.body.classId || (req.query.classId as string),
+      dueDate: new Date(req.body.dueDate),  // still convert date
+      // totalPoints stays as string
+    });
+
+    const assignment = await storage.createAssignment(assignmentData);
+    res.status(201).json(assignment);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error("Zod errors:", error.errors);
+      return res.status(400).json({ message: "Invalid assignment data", errors: error.errors });
     }
-  });
+    console.error("Error creating assignment:", error);
+    res.status(500).json({ message: "Failed to create assignment" });
+  }
+});
 
   app.put("/api/assignments/:id", isAuthenticated, async (req, res) => {
     try {

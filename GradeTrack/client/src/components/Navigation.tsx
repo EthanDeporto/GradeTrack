@@ -14,10 +14,14 @@ export function Navigation() {
 
 const navigation = [
   { name: "Dashboard", href: "/", current: location === "/" },
-  ...(user?.role === "admin" ? [{ name: "Students", href: "/students", current: location === "/students" }] : []),
+  ...(user?.role === "admin"
+    ? [{ name: "Students", href: "/students", current: location === "/students" }]
+    : []),
+  { name: "Classes", href: "/classes", current: location === "/classes" }, 
   { name: "Grades", href: "/grades", current: location === "/grades" },
   { name: "Assignments", href: "/assignments", current: location === "/assignments" },
 ];
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

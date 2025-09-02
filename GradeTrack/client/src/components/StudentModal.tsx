@@ -68,10 +68,10 @@ export default function StudentModal({ isOpen, onClose, student }: StudentModalP
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Student has been created successfully.",
+        description: student ? "Student has been updated successfully." : "Student has been created successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/students"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] }); // optional if you want dashboard stats to refresh
       onClose();
       form.reset();
     },
@@ -111,8 +111,8 @@ export default function StudentModal({ isOpen, onClose, student }: StudentModalP
         title: "Success",
         description: "Student has been updated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/students"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+  queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] }); // optional if you want dashboard stats to refresh
       onClose();
     },
     onError: (error) => {

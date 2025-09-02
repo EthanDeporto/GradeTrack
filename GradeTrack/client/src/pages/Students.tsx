@@ -37,11 +37,14 @@ export default function Students() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch students
-  const { data: students = [], isLoading: loadingStudents } = useQuery<StudentWithGrades[]>({
-    queryKey: ["/api/students", searchQuery ? { search: searchQuery } : {}],
-    retry: false,
-    enabled: isAuthenticated,
-  });
+const { data: students = [] } = useQuery<StudentWithGrades[]>({
+  queryKey: ["students", searchQuery],
+  enabled: isAuthenticated,
+  queryFn: async () => {
+    const res = await apiRequest("GET", `/api/students?search=${searchQuery}`);
+    return res.json();
+  },
+});
 
   // Delete student mutation
   const deleteStudentMutation = useMutation({
@@ -53,8 +56,8 @@ export default function Students() {
         title: "Success",
         description: "Student has been deleted successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/students"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+     queryClient.invalidateQueries({ queryKey: ["students"] });
+queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {

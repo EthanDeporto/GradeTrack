@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import DashboardStats from "@/components/DashboardStats";
 import RecentActivity from "@/components/RecentActivity";
 import StudentTable from "@/components/StudentTable";
+import { apiRequest } from "@/lib/queryClient";
 
 import type {
   StudentWithGrades,
@@ -39,35 +40,51 @@ export default function Dashboard() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch dashboard stats
-  const { data: stats, isLoading: loadingStats } = useQuery<DashboardStatsData>({
+  const { data: stats } = useQuery<DashboardStatsData>({
     queryKey: ["/api/dashboard/stats"],
-    retry: false,
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/dashboard/stats");
+      return res.json();
+    },
     enabled: isAuthenticated,
+    retry: false,
   });
 
   // Fetch recent grades
-  const { data: recentGrades = [], isLoading: loadingRecentGrades } = useQuery<GradeWithDetails[]>({
+  const { data: recentGrades = [] } = useQuery<GradeWithDetails[]>({
     queryKey: ["/api/dashboard/recent-grades"],
-    retry: false,
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/dashboard/recent-grades");
+      return res.json();
+    },
     enabled: isAuthenticated,
+    retry: false,
   });
 
   // Fetch upcoming assignments
-  const { data: upcomingAssignments = [], isLoading: loadingUpcomingAssignments } = useQuery<AssignmentWithDetails[]>({
+  const { data: upcomingAssignments = [] } = useQuery<AssignmentWithDetails[]>({
     queryKey: ["/api/dashboard/upcoming-assignments"],
-    retry: false,
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/dashboard/upcoming-assignments");
+      return res.json();
+    },
     enabled: isAuthenticated,
+    retry: false,
   });
 
-  // Fetch students for the table
-  const { data: students = [], isLoading: loadingStudents } = useQuery<StudentWithGrades[]>({
-    queryKey: ["/api/students"],
-    retry: false,
+  // Fetch students for the table (same key as Students page!)
+  const { data: students = [] } = useQuery<StudentWithGrades[]>({
+    queryKey: ["students"], // important: same key everywhere
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/students");
+      return res.json();
+    },
     enabled: isAuthenticated,
+    retry: false,
   });
 
   if (!isAuthenticated || isLoading) return null;
-  
+
   const handleViewStudent = (student: StudentWithGrades) => console.log("View student:", student);
   const handleEditStudent = (student: StudentWithGrades) => console.log("Edit student:", student);
   const handleDeleteStudent = (student: StudentWithGrades) => console.log("Delete student:", student);
@@ -86,8 +103,6 @@ export default function Dashboard() {
               <p className="mt-1 text-sm text-gray-600" data-testid="dashboard-welcome">
                 Welcome back, {user?.firstName}. Here's what's happening with your classes.
               </p>
-            </div>
-            <div className="mt-4 sm:mt-0 flex space-x-3">  
             </div>
           </div>
         </div>

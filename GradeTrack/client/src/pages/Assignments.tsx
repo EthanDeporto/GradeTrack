@@ -128,44 +128,22 @@ export default function Assignments() {
 
   // Create assignment mutation
   const createAssignmentMutation = useMutation({
-    mutationFn: async (data: AssignmentFormData) => {
-      const response = await apiRequest("POST", "/api/assignments", {
-        title: data.title,
-        description: data.description || null,
-        classId: data.classId,
-        totalPoints: data.totalPoints,
-        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Assignment has been created successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      handleCloseModal();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to create assignment. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  mutationFn: async (data: AssignmentFormData) => {
+    const response = await apiRequest("POST", "/api/assignments", {
+      title: data.title,
+      description: data.description || null,
+      classId: data.classId,
+      totalPoints: data.totalPoints,       // send as string
+      dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
+    });
+    return response.json();
+  },
+  onSuccess: () => {
+    toast({ title: "Assignment created successfully." });
+    queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
+    handleCloseModal();
+  },
+});
 
   // Update assignment mutation
   const updateAssignmentMutation = useMutation({
@@ -174,7 +152,7 @@ export default function Assignments() {
         title: data.title,
         description: data.description || null,
         classId: data.classId,
-        totalPoints: data.totalPoints,
+        totalPoints: parseFloat(data.totalPoints),
         dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
       });
       return response.json();
