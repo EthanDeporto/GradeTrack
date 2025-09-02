@@ -72,6 +72,19 @@ export async function setupAuth(app: Express) {
           });
         }
 
+         if (!user && email === 'student@school.com') {
+        const hashedPassword = await bcrypt.hash('student123', 10);
+        user = await storage.upsertUser({
+          id: 'student-1',
+          email: 'student@school.com',
+          firstName: 'Default',
+          lastName: 'Student',
+          profileImageUrl: null,
+          role: 'student',
+          passwordHash: hashedPassword,
+        });
+      }
+        
         if (!user || !user.passwordHash) {
           return done(null, false, { message: 'Invalid credentials' });
         }
@@ -103,8 +116,20 @@ export async function setupAuth(app: Express) {
 
   // Login route
   app.post('/api/login', passport.authenticate('local'), (req, res) => {
-    res.json({ success: true, user: req.user });
-  });
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  }
+
+  // Determine redirect based on role
+  let redirectTo = '/';
+  if (req.user.role === 'admin') {
+    redirectTo = '/admin/dashboard';
+  } else if (req.user.role === 'student') {
+    redirectTo = '/student/dashboard';
+  }
+
+  res.json({ success: true, user: req.user, redirectTo });
+});
 
   // Logout route
   app.post('/api/logout', (req, res) => {

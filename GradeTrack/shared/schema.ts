@@ -27,7 +27,7 @@ export const sessions = pgTable(
 );
 
 // User roles enum
-export const userRoleEnum = pgEnum('user_role', ['teacher', 'admin']);
+export const userRoleEnum = pgEnum('user_role', ['teacher', 'admin', 'student']);
 
 // User storage table (supports both Replit Auth and local auth)
 export const users = pgTable("users", {
