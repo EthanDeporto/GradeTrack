@@ -56,8 +56,8 @@ const { data: students = [] } = useQuery<StudentWithGrades[]>({
         title: "Success",
         description: "Student has been deleted successfully.",
       });
-     queryClient.invalidateQueries({ queryKey: ["students"] });
-queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    queryClient.invalidateQueries({ queryKey: ["students"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -99,7 +99,7 @@ queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
   };
 
   const handleDeleteStudent = (student: StudentWithGrades) => {
-    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}?`)) {
+    if (window.confirm(`Are you sure you want to delete ${student.firstName} ${student.lastName}? WARNING: Deleting a student will also delete their associated ID.`)) {
       deleteStudentMutation.mutate(student.id);
     }
   };

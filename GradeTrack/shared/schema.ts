@@ -38,8 +38,8 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   role: userRoleEnum("role").default('teacher'),
   passwordHash: varchar("password_hash"), // For local authentication
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 // Classes table
@@ -49,8 +49,8 @@ export const classes = pgTable("classes", {
   subject: varchar("subject").notNull(),
   teacherId: varchar("teacher_id").notNull().references(() => users.id),
   description: text("description"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 // Students table
@@ -61,16 +61,16 @@ export const students = pgTable("students", {
   lastName: varchar("last_name").notNull(),
   email: varchar("email").unique(),
   profileImageUrl: varchar("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 // Student-Class enrollment table
 export const enrollments = pgTable("enrollments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  studentId: varchar("student_id").notNull().references(() => students.id),
-  classId: varchar("class_id").notNull().references(() => classes.id),
-  enrolledAt: timestamp("enrolled_at").defaultNow(),
+  studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
+  classId: varchar("class_id").notNull().references(() => classes.id, { onDelete: "cascade" }),
+  enrolledAt: timestamp("enrolled_at", { withTimezone: true }).defaultNow(),
 });
 
 // Assignments table
@@ -78,25 +78,25 @@ export const assignments = pgTable("assignments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
   description: text("description"),
-  classId: varchar("class_id").notNull().references(() => classes.id),
+  classId: varchar("class_id").notNull().references(() => classes.id, { onDelete: "cascade" }),
   totalPoints: decimal("total_points", { precision: 5, scale: 2 }).notNull(),
-  dueDate: timestamp("due_date"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 // Grades table
 export const grades = pgTable("grades", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  studentId: varchar("student_id").notNull().references(() => students.id),
-  assignmentId: varchar("assignment_id").notNull().references(() => assignments.id),
+  studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: "cascade" }),
+  assignmentId: varchar("assignment_id").notNull().references(() => assignments.id, { onDelete: "cascade" }),
   pointsEarned: decimal("points_earned", { precision: 5, scale: 2 }),
   percentage: decimal("percentage", { precision: 5, scale: 2 }),
   letterGrade: varchar("letter_grade", { length: 2 }),
   comments: text("comments"),
-  gradedAt: timestamp("graded_at").defaultNow(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  gradedAt: timestamp("graded_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 // Relations

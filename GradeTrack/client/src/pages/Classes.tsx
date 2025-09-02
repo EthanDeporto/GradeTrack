@@ -36,6 +36,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { formatDistanceToNow } from "date-fns";
 import type { ClassWithDetails } from "@shared/schema";
+import { toZonedTime } from "date-fns-tz";
 
 const classFormSchema = z.object({
   name: z.string().min(1, "Class name is required"),
@@ -140,6 +141,7 @@ export default function Classes() {
     onSuccess: () => {
       toast({ title: "Success", description: "Class deleted successfully." });
       queryClient.invalidateQueries({ queryKey: ["/api/classes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] }); 
     },
     onError: (error) => handleAuthError(error, "delete"),
   });
@@ -182,7 +184,7 @@ export default function Classes() {
     setIsClassModalOpen(true);
   };
   const handleDeleteClass = (cls: ClassWithDetails) => {
-    if (window.confirm(`Delete class "${cls.name}"?`)) {
+    if (window.confirm(`Delete class "${cls.name}"? WARNING: Deleting a class will also delete any associated grades or assignments.`)) {
       deleteClassMutation.mutate(cls.id);
     }
   };
@@ -268,11 +270,12 @@ export default function Classes() {
                       </TableRow>
                     ) : (
                       paginatedClasses.map((cls) => (
+                        
                         <TableRow key={cls.id}>
                           <TableCell>{cls.name}</TableCell>
                           <TableCell>{cls.subject}</TableCell>
                           <TableCell>{cls.teacher?.firstName} {cls.teacher?.lastName}</TableCell>
-                          <TableCell>{cls.createdAt ? formatDistanceToNow(new Date(cls.createdAt), { addSuffix: true }) : "Unknown"}</TableCell>
+                          <TableCell>{cls.createdAt ? formatDistanceToNow(toZonedTime(new Date(cls.createdAt), Intl.DateTimeFormat().resolvedOptions().timeZone), { addSuffix: true }) : "Unknown"}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button variant="ghost" size="sm" onClick={() => handleEditClass(cls)}>
