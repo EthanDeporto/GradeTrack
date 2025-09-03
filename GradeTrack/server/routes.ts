@@ -10,7 +10,9 @@ import {
   insertEnrollmentSchema
 } from "@shared/schema";
 import { z } from "zod";
-
+import { db } from "./localDb";
+import { eq } from "drizzle-orm";
+import { users, classes } from "@shared/schema"; // tables
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication & session
   await setupAuth(app);
@@ -30,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = isLocalDevelopment ? req.user.id : req.user.claims.sub;
       const user = await storage.getUser(userId);
-      const teacherId = req.user?.role === 'admin' ? undefined : req.user?.Id;
+      const teacherId = req.user?.role === 'admin' ? undefined : req.user?.id;
       const stats = await storage.getDashboardStats(teacherId);
       res.json(stats);
     } catch (error) {
@@ -131,7 +133,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Class routes
+
+const createTeacherSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+app.get("/api/teachers", isAuthenticated, async (req, res) => {
+  try {
+    // Only admins can see all teachers
+    const teachers = await storage.getUsersByRole("teacher");
+    res.json(teachers);
+  } catch (error) {
+    console.error("Error fetching teachers:", error);
+    res.status(500).json({ message: "Failed to fetch teachers" });
+  }
+});
+
+app.post("/api/teachers", isAuthenticated, async (req, res) => {
+  try {
+    const teacherData = createTeacherSchema.parse(req.body);
+
+    const newTeacher = await storage.createTeacher(teacherData);
+
+    res.status(201).json(newTeacher);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Invalid teacher data", errors: error.errors });
+    }
+    console.error("Error creating teacher:", error);
+    res.status(500).json({ message: "Failed to create teacher" });
+  }
+});
+  
+app.delete("/api/teachers/:id", isAuthenticated, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Check if this teacher is assigned to any classes
+    const assignedClasses = await db.select().from(classes).where(eq(classes.teacherId, id));
+    if (assignedClasses.length > 0) {
+      return res.status(400).json({
+        message: "Cannot delete teacher: they are assigned to one or more classes."
+      });
+    }
+
+    // Proceed to delete
+    const deleted = await db.delete(users).where(eq(users.id, id)).returning();
+    if (!deleted.length) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    res.json({ message: "Teacher deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting teacher:", err);
+    res.status(500).json({ message: "Failed to delete teacher" });
+  }
+});
+
+
+
+
+  
+app.put("/api/teachers/:id", isAuthenticated, async (req, res) => {
+  try {
+    const teacherData = createTeacherSchema.partial().parse(req.body); // allow partial updates
+    const updatedTeacher = await storage.updateTeacher(req.params.id, teacherData);
+    res.json(updatedTeacher);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Invalid teacher data", errors: error.errors });
+    }
+    console.error("Error updating teacher:", error);
+    res.status(500).json({ message: "Failed to update teacher" });
+  }
+});
+
+
+// Class routes
  app.get("/api/classes", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user?.id || req.user?.claims?.sub;
@@ -161,22 +242,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/classes", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const classData = insertClassSchema.parse({
-        ...req.body,
-        teacherId: userId,
-      });
-      const newClass = await storage.createClass(classData);
-      res.status(201).json(newClass);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid class data", errors: error.errors });
-      }
-      console.error("Error creating class:", error);
-      res.status(500).json({ message: "Failed to create class" });
+  try {
+    const userId = req.user.id;
+    const user = await storage.getUser(userId);
+
+    // If admin, allow choosing a teacher from body; otherwise force teacherId = userId
+    const teacherId = user?.role === "admin" ? req.body.teacherId : userId;
+
+    const classData = insertClassSchema.parse({
+      ...req.body,
+      teacherId,
+    });
+
+    const newClass = await storage.createClass(classData);
+    res.status(201).json(newClass);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Invalid class data", errors: error.errors });
     }
-  });
+    console.error("Error creating class:", error);
+    res.status(500).json({ message: "Failed to create class" });
+  }
+});
+
 
   app.put("/api/classes/:id", isAuthenticated, async (req, res) => {
     try {

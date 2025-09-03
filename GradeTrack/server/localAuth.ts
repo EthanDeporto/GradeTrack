@@ -77,8 +77,8 @@ export async function setupAuth(app: Express) {
         user = await storage.upsertUser({
           id: 'student-1',
           email: 'student@school.com',
-          firstName: 'Default',
-          lastName: 'Student',
+          firstName: 'Student',
+          lastName: 'Default',
           profileImageUrl: null,
           role: 'student',
           passwordHash: hashedPassword,

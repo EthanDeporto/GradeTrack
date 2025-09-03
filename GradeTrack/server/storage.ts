@@ -191,7 +191,34 @@ export class DatabaseStorage implements IStorage {
     await db.delete(students).where(eq(students.id, id));
   }
 
-  // -------------------------
+  async getUsersByRole(role: "teacher" | "admin" | "student"): Promise<User[]> {
+  return db.select().from(users).where(eq(users.role, role));
+}
+
+// Create a teacher
+async createTeacher(userData: UpsertUser): Promise<User> {
+  const [newTeacher] = await db
+    .insert(users)
+    .values({ ...userData, role: "teacher" })
+    .returning();
+  return newTeacher;
+}
+  
+async deleteTeacher(id: string): Promise<void> {
+  await db.delete(users).where(eq(users.id, id));
+}
+
+async updateTeacher(id: string, data: Partial<UpsertUser>): Promise<User> {
+  const [updatedTeacher] = await db
+    .update(users)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(users.id, id))
+    .returning();
+  return updatedTeacher;
+}
+
+
+// -------------------------
   // Classes
   // -------------------------
   async getClasses(teacherId?: string): Promise<ClassWithDetails[]> {

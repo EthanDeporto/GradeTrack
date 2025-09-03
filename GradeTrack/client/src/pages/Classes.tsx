@@ -55,6 +55,14 @@ export default function Classes() {
   const [selectedClass, setSelectedClass] = useState<ClassWithDetails | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [teachers, setTeachers] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
+
+useEffect(() => {
+  apiRequest("GET", "/api/teachers")
+    .then((res) => res.json())
+    .then((data) => setTeachers(data))
+    .catch((err) => console.error("Failed to fetch teachers", err));
+}, []);
 
   const itemsPerPage = 10;
 
@@ -65,6 +73,7 @@ export default function Classes() {
       subject: "",
       teacherId: "",
     },
+  
   });
 
   // redirect if not logged in
@@ -367,14 +376,21 @@ export default function Classes() {
                   name="teacherId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Teacher (ID optional)</FormLabel>
+                      <FormLabel>Teacher</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter teacher ID" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <select {...field} className="w-full border rounded px-2 py-1">
+                        <option value="">-- Select a teacher --</option>
+                        {teachers.map((teacher) => (
+                        <option key={teacher.id} value={teacher.id}>
+                        {teacher.firstName} {teacher.lastName}
+                        </option>
+                     ))}
+                    </select>
+                  </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={handleCloseModal} type="button">
                     Cancel

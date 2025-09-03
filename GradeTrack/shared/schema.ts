@@ -36,8 +36,8 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: userRoleEnum("role").default('teacher'),
-  passwordHash: varchar("password_hash"), // For local authentication
+  role: userRoleEnum("role").default('student'), // default to student
+  passwordHash: varchar("password_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
@@ -153,6 +153,12 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertTeacherSchema = insertUserSchema.extend({
+  role: z.literal('teacher'),
+  department: z.string().optional(),
+  officeLocation: z.string().optional(),
 });
 
 export const insertStudentSchema = createInsertSchema(students).omit({

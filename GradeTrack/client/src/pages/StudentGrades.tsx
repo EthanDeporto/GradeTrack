@@ -88,7 +88,6 @@ export default function StudentGrades() {
                       <TableHead>Class</TableHead>
                       <TableHead>Score</TableHead>
                       <TableHead>Grade</TableHead>
-                      <TableHead>Graded</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
