@@ -50,9 +50,9 @@ const isLocalAuth = !import.meta.env.VITE_REPLIT_DOMAINS;
         <Route path="/" component={AdminDashboard} />
         <Route path="/teachers" component={Teachers} />
         <Route path="/students" component={Students} />
-        <Route path="/grades" component={Grades} />
-        <Route path="/assignments" component={Assignments} />
         <Route path="/classes" component={Classes} />
+        <Route path="/assignments" component={Assignments} />
+        <Route path="/grades" component={Grades} />
         <Route component={NotFound} />
       </Switch>
     );
@@ -62,14 +62,25 @@ const isLocalAuth = !import.meta.env.VITE_REPLIT_DOMAINS;
     return (
       <Switch>
         <Route path="/" component={StudentDashboard} />
-        <Route path="/grades" component={StudentGrades} />
-        <Route path="/assignments" component={StudentAssignments} />
         <Route path="/classes" component={StudentClasses} />
+        <Route path="/assignments" component={StudentAssignments} />
+        <Route path="/grades" component={StudentGrades} />
         <Route component={NotFound} />
       </Switch>
     );
   }
-
+if (user?.role === "teacher") {
+    return (
+      <Switch>
+        <Route path="/" component={AdminDashboard} />
+        <Route path="/students" component={Students} />
+        <Route path="/classes" component={Classes} />
+        <Route path="/assignments" component={Assignments} />
+        <Route path="/grades" component={Grades} />
+        <Route component={NotFound} />
+      </Switch>
+    );
+  }
   // Fallback if role is unknown
   return <NotFound />;
 }

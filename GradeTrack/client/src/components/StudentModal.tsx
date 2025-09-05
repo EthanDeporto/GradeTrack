@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Student } from "@shared/schema";
+import { useEffect } from "react";
 
 const studentFormSchema = z.object({
   studentId: z.string().min(1, "Student ID is required"),
@@ -29,7 +30,12 @@ const studentFormSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   profileImageUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .optional(), 
 });
+
 
 type StudentFormData = z.infer<typeof studentFormSchema>;
 
@@ -45,95 +51,89 @@ export default function StudentModal({ isOpen, onClose, student }: StudentModalP
 
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentFormSchema),
-    defaultValues: {
+      defaultValues: {
       studentId: student?.studentId || "",
       firstName: student?.firstName || "",
       lastName: student?.lastName || "",
       email: student?.email || "",
       profileImageUrl: student?.profileImageUrl || "",
-    },
+      password: "", // always blank on modal open (user fills if updating)
+},
+
   });
 
+  useEffect(() => {
+    form.reset({
+      studentId: student?.studentId || "",
+      firstName: student?.firstName || "",
+      lastName: student?.lastName || "",
+      email: student?.email || "",
+      profileImageUrl: student?.profileImageUrl || "",
+      password: "", // keep password blank
+    });
+  }, [student, form]);
+  
   const createStudentMutation = useMutation({
-    mutationFn: async (data: StudentFormData) => {
-      const response = await apiRequest("POST", "/api/students", {
-        studentId: data.studentId,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email || null,
-        profileImageUrl: data.profileImageUrl || null,
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: student ? "Student has been updated successfully." : "Student has been created successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["students"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] }); // optional if you want dashboard stats to refresh
-      onClose();
-      form.reset();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to create student. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  mutationFn: async (data: StudentFormData) => {
+    const payload = {
+      studentId: data.studentId,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email || null,
+      profileImageUrl: data.profileImageUrl || null,
+      password: student ? data.password || undefined : data.password,
+    };
+    if (!student && !data.password) {
+      toast({ title: "Password is required for new students" });
+      return;
+}
+    const response = await apiRequest("POST", "/api/students", payload);
+    return response.json();
+  },
+  onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["students"] });
+  toast({ title: "Student created successfully" });
+  onClose();
+},
+  onError: (err) => {
+    if (isUnauthorizedError(err)) {
+      toast({ title: "Unauthorized", description: "Please log in again." });
+    } else {
+      toast({ title: "Error creating student" });
+    }
+  },
+});
 
   const updateStudentMutation = useMutation({
-    mutationFn: async (data: StudentFormData) => {
-      const response = await apiRequest("PUT", `/api/students/${student!.id}`, {
-        studentId: data.studentId,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email || null,
-        profileImageUrl: data.profileImageUrl || null,
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Student has been updated successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["students"] });
-  queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] }); // optional if you want dashboard stats to refresh
-      onClose();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to update student. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  mutationFn: async (data: StudentFormData) => {
+  const payload: any = {
+    firstName: data.firstName,
+    lastName: data.lastName,
+    email: data.email || null,
+    studentId: data.studentId || null,
+    profileImageUrl: data.profileImageUrl || null,
+  };
+
+  if (data.password && data.password.trim() !== "") {
+    payload.password = data.password;
+  }
+
+  const response = await apiRequest(
+    "PUT",
+    `/api/students/${student?.id}`, 
+    payload
+  );
+  return response.json();
+},
+ onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ["students"] });
+  toast({ title: "Student updated successfully" });
+  onClose();
+},
+  onError: () => {
+    toast({ title: "Error updating student" });
+  },
+});
 
   const onSubmit = (data: StudentFormData) => {
     if (student) {
@@ -217,7 +217,7 @@ export default function StudentModal({ isOpen, onClose, student }: StudentModalP
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email (Optional)</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
@@ -230,6 +230,24 @@ export default function StudentModal({ isOpen, onClose, student }: StudentModalP
                 </FormItem>
               )}
             />
+            <FormField
+  control={form.control}
+  name="password"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Password {student ? "" : ""}</FormLabel>
+      <FormControl>
+        <Input
+          type="password"
+          placeholder={student ? "Enter new password (optional)" : "Enter password"}
+          {...field}
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+
 
             <FormField
               control={form.control}

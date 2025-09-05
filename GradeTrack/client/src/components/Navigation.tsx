@@ -26,12 +26,20 @@ export function Navigation() {
       : []),
     ...(user?.role === "student"
       ? [
-          { name: "Classes", href: "/classes", current: location === "/classes" }, // StudentClasses page
+          { name: "Classes", href: "/classes", current: location === "/classes" }, 
           { name: "Grades", href: "/grades", current: location === "/grades" },
           { name: "Assignments", href: "/assignments", current: location === "/assignments" },
         ]
       : []),
-  ];
+    ...(user?.role === "teacher"
+      ? [
+          { name: "Students", href: "/students", current: location === "/students" },
+          { name: "Classes", href: "/classes", current: location === "/classes" }, 
+          { name: "Grades", href: "/grades", current: location === "/grades" },
+          { name: "Assignments", href: "/assignments", current: location === "/assignments" },
+        ]
+      : []),
+    ];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

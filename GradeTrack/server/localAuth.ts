@@ -84,6 +84,19 @@ export async function setupAuth(app: Express) {
           passwordHash: hashedPassword,
         });
       }
+
+      if (!user && email === 'teacher@school.com') {
+        const hashedPassword = await bcrypt.hash('teacher123', 10);
+        user = await storage.upsertUser({
+          id: 'teacher-1',
+          email: 'teacher@school.com',
+          firstName: 'Teacher',
+          lastName: 'Default',
+          profileImageUrl: null,
+          role: 'teacher',
+          passwordHash: hashedPassword,
+        });
+      }
         
         if (!user || !user.passwordHash) {
           return done(null, false, { message: 'Invalid credentials' });
@@ -122,11 +135,13 @@ export async function setupAuth(app: Express) {
 
   // Determine redirect based on role
   let redirectTo = '/';
-  if (req.user.role === 'admin') {
-    redirectTo = '/admin/dashboard';
-  } else if (req.user.role === 'student') {
-    redirectTo = '/student/dashboard';
-  }
+if (req.user.role === 'admin') {
+  redirectTo = '/admin/dashboard';
+} else if (req.user.role === 'student') {
+  redirectTo = '/student/dashboard';
+} else if (req.user.role === 'teacher') {
+  redirectTo = '/teacher/dashboard';
+}
 
   res.json({ success: true, user: req.user, redirectTo });
 });

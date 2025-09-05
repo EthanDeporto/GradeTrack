@@ -61,7 +61,7 @@ export function Login() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">SchoolTrack</CardTitle>
           <CardDescription className="text-center">
-            Sign in to your teacher account
+            Sign in to your account
           </CardDescription>
         </CardHeader>
         <CardContent>

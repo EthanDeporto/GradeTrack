@@ -161,10 +161,13 @@ export const insertTeacherSchema = insertUserSchema.extend({
   officeLocation: z.string().optional(),
 });
 
-export const insertStudentSchema = createInsertSchema(students).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertStudentSchema = z.object({
+  studentId: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  password: z.string().min(6), // add this
+  profileImageUrl: z.string().url().nullable().optional(),
 });
 
 export const insertClassSchema = createInsertSchema(classes).omit({

@@ -24,6 +24,8 @@ import {
 } from "@shared/schema";
 import { db } from "./localDb";
 import { eq, and, desc, sql, like, or } from "drizzle-orm";
+import bcrypt from "bcrypt";
+import { randomUUID } from "crypto";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -97,10 +99,12 @@ export class DatabaseStorage implements IStorage {
   // -------------------------
   async getStudents(teacherId?: string, searchQuery?: string): Promise<StudentWithGrades[]> {
     let baseQuery = db
-      .select({ student: students, enrollment: enrollments, class: classes })
-      .from(students)
-      .leftJoin(enrollments, eq(students.id, enrollments.studentId))
-      .leftJoin(classes, eq(enrollments.classId, classes.id));
+  .select({ student: students, user: users, enrollment: enrollments, class: classes })
+  .from(students)
+  .leftJoin(users, eq(students.id, users.id))
+  .leftJoin(enrollments, eq(students.id, enrollments.studentId))
+  .leftJoin(classes, eq(enrollments.classId, classes.id));
+
 
     const conditions = [];
     if (teacherId) conditions.push(eq(classes.teacherId, teacherId));
@@ -118,15 +122,22 @@ export class DatabaseStorage implements IStorage {
     const results = conditions.length > 0 ? await baseQuery.where(and(...conditions)) : await baseQuery;
 
     const studentMap = new Map<string, StudentWithGrades>();
-    for (const row of results) {
-      if (!studentMap.has(row.student.id)) {
-        studentMap.set(row.student.id, { ...row.student, enrollments: [], grades: [] });
-      }
-      const student = studentMap.get(row.student.id)!;
-      if (row.enrollment && row.class) {
-        student.enrollments.push({ ...row.enrollment, class: row.class });
-      }
-    }
+for (const row of results) {
+  if (!studentMap.has(row.student.id)) {
+    studentMap.set(row.student.id, {
+      ...row.student,
+      email: row.user?.email ?? null,
+      profileImageUrl: row.user?.profileImageUrl ?? null,
+      enrollments: [],
+      grades: [],
+    });
+  }
+  const student = studentMap.get(row.student.id)!;
+  if (row.enrollment && row.class) {
+    student.enrollments.push({ ...row.enrollment, class: row.class });
+  }
+}
+
 
     // Fetch grades for each student
     for (const student of studentMap.values()) {
@@ -177,18 +188,65 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async createStudent(student: InsertStudent): Promise<Student> {
-    const [newStudent] = await db.insert(students).values(student).returning();
-    return newStudent;
+async createStudent(student: InsertStudent & { password: string }): Promise<Student> {
+  // 1. Hash the password
+  const hashedPassword = await bcrypt.hash(student.password, 10);
+
+  // 2. Create corresponding user
+  const user = await this.upsertUser({
+    id: randomUUID(), // new UUID for the `users` table
+    email: student.email ?? "", // fallback if optional
+    firstName: student.firstName,
+    lastName: student.lastName,
+    profileImageUrl: student.profileImageUrl ?? null,
+    role: "student",
+    passwordHash: hashedPassword,
+  });
+
+  // 2. Insert into `students` table
+  const [newStudent] = await db.insert(students).values({ ...student, id: user.id }).returning();
+  return newStudent;
+}
+
+
+async updateStudent(
+  id: string,
+  student: Partial<InsertStudent> & { password?: string }
+): Promise<Student> {
+  // Update password if provided
+  if (student.password && student.password.trim() !== "") {
+    const hashed = await bcrypt.hash(student.password, 10);
+    await db
+      .update(users)
+      .set({ passwordHash: hashed, updatedAt: new Date() })
+      .where(eq(users.id, id));
   }
 
-  async updateStudent(id: string, student: Partial<InsertStudent>): Promise<Student> {
-    const [updatedStudent] = await db.update(students).set({ ...student, updatedAt: new Date() }).where(eq(students.id, id)).returning();
-    return updatedStudent;
+  // Update email if provided
+  if (student.email) {
+    await db
+      .update(users)
+      .set({ email: student.email, updatedAt: new Date() })
+      .where(eq(users.id, id));
   }
+
+  // Remove password/email from object before updating students table
+  const { password, email, ...studentData } = student;
+
+  // ✅ Update studentId as well if provided
+  const [updatedStudent] = await db
+    .update(students)
+    .set({ ...studentData, updatedAt: new Date() })
+    .where(eq(students.id, id))
+    .returning();
+
+  return updatedStudent;
+}
+
 
   async deleteStudent(id: string): Promise<void> {
     await db.delete(students).where(eq(students.id, id));
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async getUsersByRole(role: "teacher" | "admin" | "student"): Promise<User[]> {
@@ -196,13 +254,15 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Create a teacher
-async createTeacher(userData: UpsertUser): Promise<User> {
+async createTeacher(userData: UpsertUser & { password: string }): Promise<User> {
+  const hashedPassword = await bcrypt.hash(userData.password, 10);
   const [newTeacher] = await db
     .insert(users)
-    .values({ ...userData, role: "teacher" })
+    .values({ ...userData, role: "teacher", passwordHash: hashedPassword })
     .returning();
   return newTeacher;
 }
+
   
 async deleteTeacher(id: string): Promise<void> {
   await db.delete(users).where(eq(users.id, id));

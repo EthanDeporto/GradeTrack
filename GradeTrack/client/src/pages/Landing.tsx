@@ -40,14 +40,6 @@ export default function Landing() {
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto" data-testid="hero-description">
             A comprehensive grade tracking and student management system designed for modern educational environments.
           </p>
-          <Button
-            size="lg"
-            className="text-lg px-8 py-4"
-            onClick={() => setLocation("/login")}
-            data-testid="login-button"
-          >
-            Get Started
-          </Button>
         </div>
 
         {/* Features Grid */}
