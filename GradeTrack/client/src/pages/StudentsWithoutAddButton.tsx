@@ -58,8 +58,7 @@ const { data: students = [] } = useQuery<StudentWithGrades[]>({
       });
     queryClient.invalidateQueries({ queryKey: ["students"] });
     queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-    
-  },
+    },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
         toast({
@@ -135,10 +134,6 @@ const { data: students = [] } = useQuery<StudentWithGrades[]>({
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex space-x-3">
-              <Button onClick={handleAddStudent} data-testid="add-student-button">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Student
-              </Button>
             </div>
           </div>
         </div>

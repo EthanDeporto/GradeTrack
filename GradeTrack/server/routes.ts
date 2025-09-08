@@ -195,8 +195,6 @@ app.delete("/api/teachers/:id", isAuthenticated, async (req, res) => {
 
 
 
-
-  
 app.put("/api/teachers/:id", isAuthenticated, async (req, res) => {
   try {
     const teacherData = createTeacherSchema.partial().parse(req.body); // allow partial updates
@@ -241,6 +239,22 @@ app.put("/api/teachers/:id", isAuthenticated, async (req, res) => {
     }
   });
 
+// GET all students in a specific class
+app.get("/api/classes/:id/students", isAuthenticated, async (req, res) => {
+  try {
+    const classId = req.params.id;
+    const classData = await storage.getClass(classId);
+    if (!classData) return res.json([]);
+
+    const students = classData.enrollments.map((e) => e.student);
+    res.json(students);
+  } catch (error) {
+    console.error("Error fetching students for class:", error);
+    res.status(500).json({ message: "Failed to fetch students for class" });
+  }
+});
+
+  
   app.post("/api/classes", isAuthenticated, async (req: any, res) => {
   try {
     const userId = req.user.id;
@@ -430,23 +444,33 @@ app.put("/api/teachers/:id", isAuthenticated, async (req, res) => {
   });
 
   // Enrollment routes
-  app.post("/api/enrollments", isAuthenticated, async (req, res) => {
-    try {
-      const enrollmentData = insertEnrollmentSchema.parse(req.body);
-      const enrollment = await storage.enrollStudent(enrollmentData);
-      res.status(201).json(enrollment);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid enrollment data", errors: error.errors });
-      }
-      console.error("Error creating enrollment:", error);
-      res.status(500).json({ message: "Failed to enroll student" });
-    }
-  });
+app.post("/api/enrollments", isAuthenticated, async (req, res) => {
+  try {
+    const { studentId, classId } = insertEnrollmentSchema.parse(req.body);
 
-  app.delete("/api/enrollments", isAuthenticated, async (req, res) => {
+    // Check if student already enrolled
+    const existingEnrollment = await storage.getStudentEnrollments(studentId);
+    if (existingEnrollment.some((e) => e.classId === classId)) {
+      return res.status(400).json({ message: "Student already enrolled in this class" });
+    }
+
+    const enrollment = await storage.enrollStudent({ studentId, classId });
+    res.status(201).json(enrollment);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: "Invalid enrollment data", errors: error.errors });
+    }
+    console.error("Error creating enrollment:", error);
+    res.status(500).json({ message: "Failed to enroll student" });
+  }
+});
+
+app.delete(
+  "/api/classes/:classId/students/:studentId",
+  isAuthenticated,
+  async (req, res) => {
     try {
-      const { studentId, classId } = req.body;
+      const { classId, studentId } = req.params;
       if (!studentId || !classId) {
         return res.status(400).json({ message: "studentId and classId are required" });
       }
@@ -456,7 +480,9 @@ app.put("/api/teachers/:id", isAuthenticated, async (req, res) => {
       console.error("Error unenrolling student:", error);
       res.status(500).json({ message: "Failed to unenroll student" });
     }
-  });
+  }
+);
+
 
   app.get("/api/students/:id/enrollments", isAuthenticated, async (req, res) => {
     try {

@@ -35,8 +35,12 @@ import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-re
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { formatDistanceToNow } from "date-fns";
-import type { ClassWithDetails } from "@shared/schema";
 import { toZonedTime } from "date-fns-tz";
+import type { ClassWithDetails } from "@shared/schema";
+
+// ✅ Import your EnrollmentModal
+import EnrollmentModal from "@/components/EnrollmentModal";
+import RosterModal from "@/components/RosterModal";
 
 const classFormSchema = z.object({
   name: z.string().min(1, "Class name is required"),
@@ -57,12 +61,19 @@ export default function Classes() {
   const [currentPage, setCurrentPage] = useState(1);
   const [teachers, setTeachers] = useState<{ id: string; firstName: string; lastName: string }[]>([]);
 
-useEffect(() => {
-  apiRequest("GET", "/api/teachers")
-    .then((res) => res.json())
-    .then((data) => setTeachers(data))
-    .catch((err) => console.error("Failed to fetch teachers", err));
-}, []);
+  // ✅ Enrollment modal state
+  const [isEnrollOpen, setIsEnrollOpen] = useState(false);
+  const [selectedClassIdForEnrollment, setSelectedClassIdForEnrollment] = useState<string | null>(null);
+  
+  const [isRosterOpen, setIsRosterOpen] = useState(false);
+  const [selectedClassIdForRoster, setSelectedClassIdForRoster] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiRequest("GET", "/api/teachers")
+      .then((res) => res.json())
+      .then((data) => setTeachers(data))
+      .catch((err) => console.error("Failed to fetch teachers", err));
+  }, []);
 
   const itemsPerPage = 10;
 
@@ -73,7 +84,6 @@ useEffect(() => {
       subject: "",
       teacherId: "",
     },
-  
   });
 
   // redirect if not logged in
@@ -150,7 +160,7 @@ useEffect(() => {
     onSuccess: () => {
       toast({ title: "Success", description: "Class deleted successfully." });
       queryClient.invalidateQueries({ queryKey: ["/api/classes"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] }); 
+      queryClient.invalidateQueries({ queryKey: ["/api/assignments"] });
     },
     onError: (error) => handleAuthError(error, "delete"),
   });
@@ -171,6 +181,8 @@ useEffect(() => {
       variant: "destructive",
     });
   };
+
+  
 
   if (!isAuthenticated || isLoading) return null;
 
@@ -202,6 +214,16 @@ useEffect(() => {
     setSelectedClass(undefined);
     form.reset();
   };
+
+  const handleOpenEnrollment = (classId: string) => {
+    setSelectedClassIdForEnrollment(classId);
+    setIsEnrollOpen(true);
+  };
+
+const handleOpenRoster = (classId: string) => {
+  setSelectedClassIdForRoster(classId);
+  setIsRosterOpen(true);
+};
 
   const onSubmit = (data: ClassFormData) => {
     if (selectedClass) updateClassMutation.mutate(data);
@@ -279,7 +301,6 @@ useEffect(() => {
                       </TableRow>
                     ) : (
                       paginatedClasses.map((cls) => (
-                        
                         <TableRow key={cls.id}>
                           <TableCell>{cls.name}</TableCell>
                           <TableCell>{cls.subject}</TableCell>
@@ -297,6 +318,24 @@ useEffect(() => {
                                 className="text-red-600"
                               >
                                 <Trash2 className="h-4 w-4" />
+                              </Button>
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenRoster(cls.id)}
+                              >
+                                View Roster
+                              </Button>
+
+                              
+                              {/* ✅ Enroll Student Button */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenEnrollment(cls.id)}
+                              >
+                                Enroll Student
                               </Button>
                             </div>
                           </TableCell>
@@ -337,7 +376,7 @@ useEffect(() => {
           </Card>
         </div>
 
-        {/* Modal */}
+        {/* Class Modal */}
         <Dialog open={isClassModalOpen} onOpenChange={handleCloseModal}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -379,18 +418,18 @@ useEffect(() => {
                       <FormLabel>Teacher</FormLabel>
                       <FormControl>
                         <select {...field} className="w-full border rounded px-2 py-1">
-                        <option value="">-- Select a teacher --</option>
-                        {teachers.map((teacher) => (
-                        <option key={teacher.id} value={teacher.id}>
-                        {teacher.firstName} {teacher.lastName}
-                        </option>
-                     ))}
-                    </select>
-                  </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                          <option value="">-- Select a teacher --</option>
+                          {teachers.map((teacher) => (
+                            <option key={teacher.id} value={teacher.id}>
+                              {teacher.firstName} {teacher.lastName}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={handleCloseModal} type="button">
                     Cancel
@@ -403,6 +442,24 @@ useEffect(() => {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* ✅ Enrollment Modal */}
+        {selectedClassIdForEnrollment && (
+          <EnrollmentModal
+            isOpen={isEnrollOpen}
+            onClose={() => setIsEnrollOpen(false)}
+            classId={selectedClassIdForEnrollment}
+          />
+        )}
+      {selectedClassIdForRoster && (
+  <RosterModal
+    isOpen={isRosterOpen}
+    onClose={() => setIsRosterOpen(false)}
+    classId={selectedClassIdForRoster}
+  />
+)}
+
+      
       </main>
     </Layout>
   );

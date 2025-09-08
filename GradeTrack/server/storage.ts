@@ -451,17 +451,30 @@ async updateTeacher(id: string, data: Partial<UpsertUser>): Promise<User> {
     return { ...result.grade, student: result.student, assignment: { ...result.assignment, class: result.class } };
   }
 
-  async createGrade(grade: InsertGrade): Promise<Grade> {
-    const assignment = await db.select().from(assignments).where(eq(assignments.id, grade.assignmentId)).limit(1);
-    if (assignment.length > 0 && grade.pointsEarned !== null) {
-      const percentage = (Number(grade.pointsEarned) / Number(assignment[0].totalPoints)) * 100;
-      grade.percentage = percentage.toString();
-      grade.letterGrade = this.getLetterGrade(percentage);
-    }
+async createGrade(grade: InsertGrade): Promise<Grade> {
+  // 1️⃣ Check if a grade already exists for this student & assignment
+  const existingGrade = await db
+    .select()
+    .from(grades)
+    .where(and(eq(grades.studentId, grade.studentId), eq(grades.assignmentId, grade.assignmentId)));
 
-    const [newGrade] = await db.insert(grades).values(grade).returning();
-    return newGrade;
+  if (existingGrade.length > 0) {
+    throw new Error("Grade already exists for this student and assignment.");
   }
+
+  // 2️⃣ Compute percentage & letter grade
+  const assignment = await db.select().from(assignments).where(eq(assignments.id, grade.assignmentId)).limit(1);
+  if (assignment.length > 0 && grade.pointsEarned !== null) {
+    const percentage = (Number(grade.pointsEarned) / Number(assignment[0].totalPoints)) * 100;
+    grade.percentage = percentage.toString();
+    grade.letterGrade = this.getLetterGrade(percentage);
+  }
+
+  // 3️⃣ Insert grade
+  const [newGrade] = await db.insert(grades).values(grade).returning();
+  return newGrade;
+}
+
 
   async updateGrade(id: string, grade: Partial<InsertGrade>): Promise<Grade> {
     if (grade.pointsEarned !== undefined) {

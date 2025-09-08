@@ -18,6 +18,7 @@ import StudentGrades from "@/pages/StudentGrades"
 import StudentAssignments from "@/pages/StudentAssignments";
 import Teachers from "@/pages/Teachers"
 import StudentClasses from "@/pages/StudentClasses";
+import StudentsWithoutAddButton from "@/pages/StudentsWithoutAddButton"
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -73,8 +74,8 @@ if (user?.role === "teacher") {
     return (
       <Switch>
         <Route path="/" component={AdminDashboard} />
-        <Route path="/students" component={Students} />
-        <Route path="/classes" component={Classes} />
+        <Route path="/students" component={StudentsWithoutAddButton} />
+        <Route path="/classes" component={StudentClasses} />
         <Route path="/assignments" component={Assignments} />
         <Route path="/grades" component={Grades} />
         <Route component={NotFound} />

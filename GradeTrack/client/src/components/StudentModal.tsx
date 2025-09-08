@@ -92,6 +92,7 @@ export default function StudentModal({ isOpen, onClose, student }: StudentModalP
   },
   onSuccess: () => {
   queryClient.invalidateQueries({ queryKey: ["students"] });
+  queryClient.invalidateQueries({ queryKey: ["/api/classes"] });
   toast({ title: "Student created successfully" });
   onClose();
 },
