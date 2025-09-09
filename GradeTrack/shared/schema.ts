@@ -214,6 +214,9 @@ export type InsertGrade = z.infer<typeof insertGradeSchema>;
 export type Enrollment = typeof enrollments.$inferSelect;
 export type InsertEnrollment = z.infer<typeof insertEnrollmentSchema>;
 
+export type AssignmentWithStudentGrade = AssignmentWithDetails & {
+  studentGrade: Grade | null;
+};
 // Extended types for API responses
 export type StudentWithGrades = Student & {
   enrollments: (Enrollment & { class: Class })[];

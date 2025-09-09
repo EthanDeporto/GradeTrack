@@ -45,11 +45,27 @@ export default function StudentClasses() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch classes
-  const { data: classes = [], isLoading: loadingClasses } = useQuery<ClassWithDetails[]>({
-    queryKey: ["/api/classes"],
-    retry: false,
-    enabled: isAuthenticated,
-  });
+// Fetch classes for the logged-in student
+const { data: classes = [], isLoading: loadingClasses } = useQuery<ClassWithDetails[]>({
+  queryKey: ["/api/dashboard/student/classes"],
+  queryFn: async () => {
+    // Fetch from your backend
+    const res = await fetch("/api/dashboard/student/classes");
+    if (!res.ok) {
+      throw new Error("Failed to fetch classes");
+    }
+
+    // Parse JSON and cast to ClassWithDetails[]
+    const data = (await res.json()) as ClassWithDetails[];
+    return data;
+  },
+  retry: false,
+  enabled: isAuthenticated,
+});
+
+
+
+
 
   // Fetch student grades
   const { data: grades = [], isLoading: loadingGrades } = useQuery<GradeWithDetails[]>({

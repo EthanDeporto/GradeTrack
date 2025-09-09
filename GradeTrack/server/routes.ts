@@ -133,6 +133,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+// Get grades for the logged-in student
+app.get("/api/dashboard/student/grades", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = isLocalDevelopment ? req.user.id : req.user.claims.sub;
+
+    // Only fetch grades for the student
+    const grades = await storage.getGrades({ studentId: userId });
+    res.json(grades);
+  } catch (error) {
+    console.error("Error fetching student grades:", error);
+    res.status(500).json({ message: "Failed to fetch student grades" });
+  }
+});
+
+// GET /api/dashboard/student/classes
+app.get("/api/dashboard/student/classes", async (req, res) => {
+  const studentId = req.user?.id;
+  if (!studentId) return res.status(401).json({ error: "Unauthorized" });
+
+  const classes = await storage.getStudentClasses(studentId);
+  res.json(classes);
+});
+
 
 const createTeacherSchema = z.object({
   firstName: z.string(),
@@ -375,6 +398,22 @@ app.get("/api/classes/:id/students", isAuthenticated, async (req, res) => {
       res.status(500).json({ message: "Failed to delete assignment" });
     }
   });
+
+// Get assignments + grade for logged-in student
+app.get("/api/student/assignments", isAuthenticated, async (req: any, res) => {
+  const studentId = req.user?.id || req.user?.claims?.sub;
+  if (!studentId) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const assignments = await storage.getStudentAssignments(studentId);
+    res.json(assignments);
+  } catch (error) {
+    console.error("Error fetching student assignments:", error);
+    res.status(500).json({ message: "Failed to fetch student assignments" });
+  }
+});
+
+
 
   // Grade routes
   app.get("/api/grades", isAuthenticated, async (req, res) => {

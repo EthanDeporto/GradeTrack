@@ -14,6 +14,7 @@ import {
   type Assignment,
   type InsertAssignment,
   type Grade,
+  type AssignmentWithStudentGrade,
   type InsertGrade,
   type Enrollment,
   type InsertEnrollment,
@@ -70,6 +71,7 @@ export interface IStorage {
   getRecentGrades(limit?: number, teacherId?: string): Promise<GradeWithDetails[]>;
   getUpcomingAssignments(limit?: number, teacherId?: string): Promise<AssignmentWithDetails[]>;
 }
+// storage.ts
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
@@ -82,6 +84,8 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+
+  
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -334,6 +338,32 @@ async updateTeacher(id: string, data: Partial<UpsertUser>): Promise<User> {
     };
   }
 
+async getStudentClasses(studentId: string): Promise<ClassWithDetails[]> {
+  const classResults = await db
+    .select({ class: classes, teacher: users })
+    .from(classes)
+    .innerJoin(users, eq(classes.teacherId, users.id))
+    .where(
+      sql`EXISTS (
+        SELECT 1 FROM enrollments e
+        WHERE e.class_id = ${classes.id} AND e.student_id = ${studentId}
+      )`
+    );
+
+  return Promise.all(
+    classResults.map(async ({ class: cls, teacher }) => {
+      const assignmentData = await db.select().from(assignments).where(eq(assignments.classId, cls.id));
+      return {
+        ...cls,
+        teacher,
+        enrollments: [], // optional: could fetch classmates
+        assignments: assignmentData,
+      };
+    })
+  );
+}
+
+
   async createClass(classData: InsertClass): Promise<Class> {
     const [newClass] = await db.insert(classes).values(classData).returning();
     return newClass;
@@ -400,6 +430,42 @@ async updateTeacher(id: string, data: Partial<UpsertUser>): Promise<User> {
       submissionCount: gradeData.length,
     };
   }
+
+// storage.ts
+async getStudentAssignments(studentId: string): Promise<AssignmentWithStudentGrade[]> {
+  const assignmentResults = await db
+    .select({ assignment: assignments, class: classes })
+    .from(assignments)
+    .innerJoin(classes, eq(assignments.classId, classes.id))
+    .where(
+      sql`EXISTS (
+        SELECT 1 FROM enrollments e
+        WHERE e.class_id = ${classes.id} AND e.student_id = ${studentId}
+      )`
+    )
+    .orderBy(assignments.dueDate);
+
+  const detailedAssignments: AssignmentWithStudentGrade[] = await Promise.all(
+    assignmentResults.map(async ({ assignment, class: cls }) => {
+      const [gradeRecord] = await db
+        .select()
+        .from(grades)
+        .where(and(eq(grades.assignmentId, assignment.id), eq(grades.studentId, studentId)));
+
+      return {
+        ...assignment,
+        class: cls,
+        grades: [],            // still required by AssignmentWithDetails
+        submissionCount: 0,    // fill or calculate as needed
+        studentGrade: gradeRecord ?? null,
+      };
+    })
+  );
+
+  return detailedAssignments;
+}
+
+
 
   async createAssignment(assignment: InsertAssignment): Promise<Assignment> {
     const [newAssignment] = await db.insert(assignments).values(assignment).returning();

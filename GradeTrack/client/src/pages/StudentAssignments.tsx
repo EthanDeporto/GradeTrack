@@ -14,7 +14,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Users } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDistanceToNow } from "date-fns";
-import type { AssignmentWithDetails, ClassWithDetails } from "@shared/schema";
+import type { AssignmentWithStudentGrade, ClassWithDetails, StudentWithGrades } from "@shared/schema";
+
+const getGradeColor = (percentage: number) => {
+  if (percentage >= 90) return "bg-green-100 text-green-800";
+  if (percentage >= 80) return "bg-blue-100 text-blue-800";
+  if (percentage >= 70) return "bg-yellow-100 text-yellow-800";
+  return "bg-red-100 text-red-800";
+};
 
 export default function StudentAssignments() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,17 +29,33 @@ export default function StudentAssignments() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Fetch student assignments
-  const { data: assignments = [] } = useQuery<AssignmentWithDetails[]>({
-    queryKey: ["/api/student/assignments"],
-    queryFn: () => apiRequest("GET", "/api/student/assignments").then(res => res.json()),
-  });
+
+  
+const { data: assignments = [] } = useQuery<AssignmentWithStudentGrade[]>({
+  queryKey: ["/api/student/assignments"],
+  queryFn: async () => {
+    const res = await apiRequest("GET", "/api/student/assignments"); // use your existing signature
+    return res.json() as Promise<AssignmentWithStudentGrade[]>;      // parse JSON here
+  },
+});
+
+
 
   // Fetch classes for filter
   const { data: classes = [] } = useQuery<ClassWithDetails[]>({
     queryKey: ["/api/classes"],
     queryFn: () => apiRequest("GET", "/api/classes").then(res => res.json()),
   });
+
+// Example: fetching current student info
+const { data: currentStudent } = useQuery<StudentWithGrades>({
+  queryKey: ["/api/me"],
+  queryFn: () => apiRequest("GET", "/api/me").then(res => res.json()),
+});
+
+// Then later
+const currentStudentId = currentStudent?.id;
+
 
   const filteredAssignments = assignments.filter(assignment => {
     const matchesClass = selectedClass === "all" || assignment.class.id === selectedClass;
@@ -130,7 +153,7 @@ export default function StudentAssignments() {
                       <TableHead>Class</TableHead>
                       <TableHead>Points</TableHead>
                       <TableHead>Due Date</TableHead>
-                      <TableHead>Submissions</TableHead>
+                      <TableHead>Grade</TableHead>
                       <TableHead>Created</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -142,6 +165,7 @@ export default function StudentAssignments() {
                         </TableCell>
                       </TableRow>
                     ) : (
+                      
                       paginatedAssignments.map((assignment) => {
                         const dueDateInfo = getDueDateStatus(assignment.dueDate);
                         return (
@@ -161,10 +185,17 @@ export default function StudentAssignments() {
                             <TableCell>
                               <Badge className={dueDateInfo.color}>{dueDateInfo.label}</Badge>
                             </TableCell>
-                            <TableCell className="text-sm text-gray-900 flex items-center space-x-1">
-                              <Users className="h-4 w-4 text-gray-400" />
-                              <span>{assignment.submissionCount}</span>
-                            </TableCell>
+                            <TableCell>
+  {assignment.studentGrade ? (
+    <Badge className={getGradeColor(Number(assignment.studentGrade.percentage) || 0)}>
+      {assignment.studentGrade.pointsEarned}/{assignment.totalPoints} ({assignment.studentGrade.letterGrade})
+    </Badge>
+  ) : (
+    "Not graded"
+  )}
+</TableCell>
+
+
                             <TableCell className="text-sm text-gray-500">
                               {assignment.createdAt ? formatDistanceToNow(new Date(assignment.createdAt), { addSuffix: true }) : "Unknown"}
                             </TableCell>

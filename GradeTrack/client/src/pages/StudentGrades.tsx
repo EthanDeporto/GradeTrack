@@ -29,11 +29,20 @@ export default function StudentGrades() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: grades = [], isLoading: loadingGrades } = useQuery<GradeWithDetails[]>({
-    queryKey: [`/api/dashboard/student/grades`],
-    retry: false,
-    enabled: isAuthenticated,
-  });
+const { data: grades = [], isLoading: loadingGrades } = useQuery<GradeWithDetails[]>({
+  queryKey: ["/api/dashboard/student/grades"],
+  queryFn: async () => {
+    // apiRequest returns a Response, so we need to call .json()
+    const res = await apiRequest("GET", "/api/dashboard/student/grades");
+    const data = await res.json(); // now it's parsed
+    return data as GradeWithDetails[]; // cast to the correct type
+  },
+  retry: false,
+  enabled: isAuthenticated,
+});
+
+
+
 
   if (!isAuthenticated || isLoading) return null;
 
