@@ -82,7 +82,7 @@ if (user?.role === "teacher") {
       </Switch>
     );
   }
-  // Fallback if role is unknown
+  
   return <NotFound />;
 }
 
