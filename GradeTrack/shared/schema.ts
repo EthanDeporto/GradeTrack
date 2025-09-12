@@ -65,6 +65,25 @@ export const students = pgTable("students", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+// Teachers table
+export const teachers = pgTable("teachers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  firstName: varchar("first_name").notNull(),
+  lastName: varchar("last_name").notNull(),
+  email: varchar("email").unique(),
+  profileImageUrl: varchar("profile_image_url"),
+  department: varchar("department"),
+  officeLocation: varchar("office_location"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Relations
+export const teachersRelations = relations(teachers, ({ many }) => ({
+  classes: many(classes),
+}));
+
+
 // Student-Class enrollment table
 export const enrollments = pgTable("enrollments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -155,11 +174,16 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
-export const insertTeacherSchema = insertUserSchema.extend({
-  role: z.literal('teacher'),
+export const insertTeacherSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  password: z.string().min(6),
+  profileImageUrl: z.string().url().nullable().optional(),
   department: z.string().optional(),
   officeLocation: z.string().optional(),
 });
+
 
 export const insertStudentSchema = z.object({
   studentId: z.string(),
@@ -201,6 +225,9 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
+
+export type Teacher = typeof students.$inferSelect;
+export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
 
 export type Class = typeof classes.$inferSelect;
 export type InsertClass = z.infer<typeof insertClassSchema>;

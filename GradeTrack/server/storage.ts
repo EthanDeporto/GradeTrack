@@ -1,6 +1,7 @@
 import {
   users,
   students,
+  teachers,
   classes,
   assignments,
   grades,
@@ -9,6 +10,7 @@ import {
   type UpsertUser,
   type Student,
   type InsertStudent,
+  type InsertTeacher,
   type Class,
   type InsertClass,
   type Assignment,
@@ -22,6 +24,7 @@ import {
   type ClassWithDetails,
   type GradeWithDetails,
   type AssignmentWithDetails,
+  
 } from "@shared/schema";
 import { db } from "./localDb";
 import { eq, and, desc, sql, like, or } from "drizzle-orm";
@@ -258,14 +261,34 @@ async updateStudent(
 }
 
 // Create a teacher
-async createTeacher(userData: UpsertUser & { password: string }): Promise<User> {
-  const hashedPassword = await bcrypt.hash(userData.password, 10);
-  const [newTeacher] = await db
-    .insert(users)
-    .values({ ...userData, role: "teacher", passwordHash: hashedPassword })
-    .returning();
-  return newTeacher;
+async createTeacher(teacher: InsertTeacher & { password: string }): Promise<User> {
+  const hashedPassword = await bcrypt.hash(teacher.password, 10);
+
+  // 1. Create corresponding user
+  const user = await this.upsertUser({
+    id: randomUUID(),
+    email: teacher.email,
+    firstName: teacher.firstName,
+    lastName: teacher.lastName,
+    profileImageUrl: teacher.profileImageUrl ?? null,
+    role: "teacher",
+    passwordHash: hashedPassword,
+  });
+
+  // 2. Insert into `teachers` table (linked by same UUID)
+  await db.insert(teachers).values({
+    id: user.id,
+    firstName: teacher.firstName,
+    lastName: teacher.lastName,
+    email: teacher.email,
+    profileImageUrl: teacher.profileImageUrl ?? null,
+    department: teacher.department ?? null,
+    officeLocation: teacher.officeLocation ?? null,
+  });
+
+  return user;
 }
+
 
   
 async deleteTeacher(id: string): Promise<void> {
