@@ -117,12 +117,19 @@ export default function Classes() {
     }
   }, [selectedClass, form]);
 
-  // Fetch classes
+  const { user } = useAuth(); // assuming you have user info
+
+const classesQueryKey = user?.role === "teacher" ? "/api/teachers/classes" : "/api/classes";
+
   const { data: classes = [], isLoading: loadingClasses } = useQuery<ClassWithDetails[]>({
-    queryKey: ["/api/classes"],
-    retry: false,
-    enabled: isAuthenticated,
-  });
+  queryKey: [classesQueryKey],
+  queryFn: async () => {
+    const res = await apiRequest("GET", classesQueryKey);
+    return res.json();
+  },
+  retry: false,
+  enabled: isAuthenticated && !!user,
+});
 
   // Create class
   const createClassMutation = useMutation({
@@ -410,26 +417,29 @@ const handleOpenRoster = (classId: string) => {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="teacherId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Teacher</FormLabel>
-                      <FormControl>
-                        <select {...field} className="w-full border rounded px-2 py-1">
-                          <option value="">-- Select a teacher --</option>
-                          {teachers.map((teacher) => (
-                            <option key={teacher.id} value={teacher.id}>
-                              {teacher.firstName} {teacher.lastName}
-                            </option>
-                          ))}
-                        </select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {user?.role !== "teacher" && (
+  <FormField
+    control={form.control}
+    name="teacherId"
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel>Teacher</FormLabel>
+        <FormControl>
+          <select {...field} className="w-full border rounded px-2 py-1">
+            <option value="">-- Select a teacher --</option>
+            {teachers.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {teacher.firstName} {teacher.lastName}
+              </option>
+            ))}
+          </select>
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
+)}
+
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={handleCloseModal} type="button">
                     Cancel

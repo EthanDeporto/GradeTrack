@@ -23,7 +23,7 @@ interface StudentTableProps {
   onExport: () => void;
 }
 
-type SortField = 'name' | 'studentId' | 'grade';
+type SortField = 'name' | 'studentId';
 type SortDirection = 'asc' | 'desc';
 
 export default function StudentTable({
@@ -40,13 +40,6 @@ export default function StudentTable({
   
   const itemsPerPage = 10;
 
-  const getGradeColor = (percentage?: number) => {
-    if (!percentage) return "bg-gray-100 text-gray-800";
-    if (percentage >= 90) return "bg-green-100 text-green-800";
-    if (percentage >= 80) return "bg-blue-100 text-blue-800";
-    if (percentage >= 70) return "bg-yellow-100 text-yellow-800";
-    return "bg-red-100 text-red-800";
-  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -57,25 +50,24 @@ export default function StudentTable({
     }
   };
 
-  const sortedStudents = [...students].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortField) {
-      case 'name':
-        comparison = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
-        break;
-      case 'studentId':
-        comparison = a.studentId.localeCompare(b.studentId);
-        break;
-      case 'grade':
-        const aGrade = a.currentGrade?.percentage || 0;
-        const bGrade = b.currentGrade?.percentage || 0;
-        comparison = aGrade - bGrade;
-        break;
-    }
-    
-    return sortDirection === 'asc' ? comparison : -comparison;
-  });
+type SortField = 'name' | 'studentId';
+// remove 'grade'
+
+const sortedStudents = [...students].sort((a, b) => {
+  let comparison = 0;
+
+  switch (sortField) {
+    case 'name':
+      comparison = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      break;
+    case 'studentId':
+      comparison = a.studentId.localeCompare(b.studentId);
+      break;
+  }
+
+  return sortDirection === 'asc' ? comparison : -comparison;
+});
+
 
   const filteredStudents = selectedClass === "all" 
     ? sortedStudents 
@@ -160,16 +152,7 @@ export default function StudentTable({
                     <ArrowUpDown className="ml-1 h-4 w-4" />
                   </div>
                 </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('grade')}
-                  data-testid="sort-grade"
-                >
-                  <div className="flex items-center">
-                    Current Grade
-                    <ArrowUpDown className="ml-1 h-4 w-4" />
-                  </div>
-                </TableHead>
+                <TableHead className="text-center">Details</TableHead>
                 <TableHead>Last Activity</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -205,17 +188,17 @@ export default function StudentTable({
                     <TableCell className="text-sm text-gray-900" data-testid={`student-id-${student.id}`}>
                       {student.studentId}
                     </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={getGradeColor(student.currentGrade?.percentage)}
-                        data-testid={`student-grade-${student.id}`}
-                      >
-                        {student.currentGrade ? 
-                          `${student.currentGrade.letterGrade} (${student.currentGrade.percentage}%)` :
-                          "No grades"
-                        }
-                      </Badge>
+                  <TableCell className="text-center">
+                    <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewStudent(student)}
+                    data-testid={`view-student-details-${student.id}`}
+                    >
+                    View Student's Details
+                    </Button>
                     </TableCell>
+
                     <TableCell className="text-sm text-gray-500" data-testid={`student-activity-${student.id}`}>
                       {getLastActivity(student)}
                     </TableCell>

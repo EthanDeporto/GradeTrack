@@ -104,66 +104,43 @@ export class DatabaseStorage implements IStorage {
   // -------------------------
   // Students
   // -------------------------
-  async getStudents(teacherId?: string, searchQuery?: string): Promise<StudentWithGrades[]> {
-    let baseQuery = db
-  .select({ student: students, user: users, enrollment: enrollments, class: classes })
-  .from(students)
-  .leftJoin(users, eq(students.id, users.id))
-  .leftJoin(enrollments, eq(students.id, enrollments.studentId))
-  .leftJoin(classes, eq(enrollments.classId, classes.id));
+async getStudents(teacherId?: string) {
+  const conditions = [];
+  if (teacherId) conditions.push(eq(classes.teacherId, teacherId));
 
+  const studentsQuery = await db
+    .select({ student: students, user: users, enrollment: enrollments, class: classes })
+    .from(students)
+    .leftJoin(users, eq(students.id, users.id))
+    .leftJoin(enrollments, eq(students.id, enrollments.studentId))
+    .leftJoin(classes, eq(enrollments.classId, classes.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(students.lastName);
 
-    const conditions = [];
-    if (teacherId) conditions.push(eq(classes.teacherId, teacherId));
-    if (searchQuery) {
-      conditions.push(
-        or(
-          like(students.firstName, `%${searchQuery}%`),
-          like(students.lastName, `%${searchQuery}%`),
-          like(students.email, `%${searchQuery}%`),
-          like(students.studentId, `%${searchQuery}%`)
-        )
-      );
+  // Map students uniquely, include enrollments
+  const uniqueStudentsMap = new Map<string, StudentWithGrades>();
+  for (const row of studentsQuery) {
+    const existing = uniqueStudentsMap.get(row.student.id);
+    const enrollmentEntry = row.enrollment && row.class
+      ? { ...row.enrollment, class: row.class }
+      : null;
+
+    if (existing) {
+      if (enrollmentEntry) existing.enrollments.push(enrollmentEntry);
+    } else {
+      uniqueStudentsMap.set(row.student.id, {
+  ...row.student,
+  enrollments: enrollmentEntry ? [enrollmentEntry] : [],
+  grades: [], // can be populated later
+});
+
     }
-
-    const results = conditions.length > 0 ? await baseQuery.where(and(...conditions)) : await baseQuery;
-
-    const studentMap = new Map<string, StudentWithGrades>();
-for (const row of results) {
-  if (!studentMap.has(row.student.id)) {
-    studentMap.set(row.student.id, {
-      ...row.student,
-      email: row.user?.email ?? null,
-      profileImageUrl: row.user?.profileImageUrl ?? null,
-      enrollments: [],
-      grades: [],
-    });
   }
-  const student = studentMap.get(row.student.id)!;
-  if (row.enrollment && row.class) {
-    student.enrollments.push({ ...row.enrollment, class: row.class });
-  }
+
+  return Array.from(uniqueStudentsMap.values());
 }
 
 
-    // Fetch grades for each student
-    for (const student of studentMap.values()) {
-      const studentGrades = await db
-        .select({ grade: grades, assignment: assignments })
-        .from(grades)
-        .innerJoin(assignments, eq(grades.assignmentId, assignments.id))
-        .where(eq(grades.studentId, student.id));
-
-      student.grades = studentGrades.map(({ grade, assignment }) => ({ ...grade, assignment }));
-
-      if (student.grades.length > 0) {
-        const avg = student.grades.reduce((sum, g) => sum + Number(g.percentage || 0), 0) / student.grades.length;
-        student.currentGrade = { percentage: Math.round(avg), letterGrade: this.getLetterGrade(avg) };
-      }
-    }
-
-    return Array.from(studentMap.values());
-  }
 
   async getStudent(id: string): Promise<StudentWithGrades | undefined> {
     const [student] = await db.select().from(students).where(eq(students.id, id));
@@ -386,6 +363,40 @@ async getStudentClasses(studentId: string): Promise<ClassWithDetails[]> {
   );
 }
 
+async getTeachersClasses(teacherId: string): Promise<ClassWithDetails[]> {
+  // 1️⃣ Get all classes for this teacher
+  const classResults = await db
+    .select({ class: classes, teacher: users })
+    .from(classes)
+    .innerJoin(users, eq(classes.teacherId, users.id))
+    .where(eq(classes.teacherId, teacherId));
+
+  // 2️⃣ For each class, fetch enrollments and assignments
+  const detailedClasses = await Promise.all(
+    classResults.map(async ({ class: cls, teacher }) => {
+      const enrollmentData = await db
+        .select({ enrollment: enrollments, student: students })
+        .from(enrollments)
+        .innerJoin(students, eq(enrollments.studentId, students.id))
+        .where(eq(enrollments.classId, cls.id));
+
+      const assignmentData = await db
+        .select()
+        .from(assignments)
+        .where(eq(assignments.classId, cls.id));
+
+      return {
+        ...cls,
+        teacher,
+        enrollments: enrollmentData.map(({ enrollment, student }) => ({ ...enrollment, student })),
+        assignments: assignmentData,
+      };
+    })
+  );
+
+  return detailedClasses;
+}
+
 
   async createClass(classData: InsertClass): Promise<Class> {
     const [newClass] = await db.insert(classes).values(classData).returning();
@@ -404,16 +415,21 @@ async getStudentClasses(studentId: string): Promise<ClassWithDetails[]> {
   // -------------------------
   // Assignments
   // -------------------------
-  async getAssignments(classId?: string): Promise<AssignmentWithDetails[]> {
-    const query = db
-      .select({ assignment: assignments, class: classes })
-      .from(assignments)
-      .innerJoin(classes, eq(assignments.classId, classes.id))
-      .where(classId ? eq(assignments.classId, classId) : undefined);
+async getAssignments(classId?: string, teacherId?: string): Promise<AssignmentWithDetails[]> {
+  const conditions = [];
+  if (classId) conditions.push(eq(assignments.classId, classId));
+  if (teacherId) conditions.push(eq(classes.teacherId, teacherId));
 
-    const assignmentResults = await query;
+  const query = db
+    .select({ assignment: assignments, class: classes })
+    .from(assignments)
+    .innerJoin(classes, eq(assignments.classId, classes.id))
+    .where(conditions.length ? and(...conditions) : undefined);
 
-    const assignmentDetailsPromises = assignmentResults.map(async ({ assignment, class: cls }) => {
+  const assignmentResults = await query;
+
+  return Promise.all(
+    assignmentResults.map(async ({ assignment, class: cls }) => {
       const gradeData = await db
         .select({ grade: grades, student: students })
         .from(grades)
@@ -426,10 +442,10 @@ async getStudentClasses(studentId: string): Promise<ClassWithDetails[]> {
         grades: gradeData.map(({ grade, student }) => ({ ...grade, student })),
         submissionCount: gradeData.length,
       };
-    });
+    })
+  );
+}
 
-    return Promise.all(assignmentDetailsPromises);
-  }
 
   async getAssignment(id: string): Promise<AssignmentWithDetails | undefined> {
     const [assignmentData] = await db
@@ -507,38 +523,40 @@ async getStudentAssignments(studentId: string): Promise<AssignmentWithStudentGra
   // -------------------------
   // Grades
   // -------------------------
-  async getGrades(filters?: { studentId?: string; assignmentId?: string; classId?: string }): Promise<GradeWithDetails[]> {
-    const conditions = [
-      filters?.studentId ? eq(grades.studentId, filters.studentId) : undefined,
-      filters?.assignmentId ? eq(grades.assignmentId, filters.assignmentId) : undefined,
-      filters?.classId ? eq(assignments.classId, filters.classId) : undefined,
-    ].filter(Boolean) as any[];
+async getGrade(id: string): Promise<GradeWithDetails | undefined> {
+  const results = await this.getGrades({ studentId: undefined, assignmentId: undefined, classId: undefined });
+  return results.find(g => g.id === id);
+}
 
-    const results = await db
-      .select({ grade: grades, student: students, assignment: assignments, class: classes })
-      .from(grades)
-      .innerJoin(students, eq(grades.studentId, students.id))
-      .innerJoin(assignments, eq(grades.assignmentId, assignments.id))
-      .innerJoin(classes, eq(assignments.classId, classes.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(grades.gradedAt));
 
-    return results.map(({ grade, student, assignment, class: cls }) => ({ ...grade, student, assignment: { ...assignment, class: cls } }));
-  }
+  async getGrades(filters: {
+  studentId?: string;
+  assignmentId?: string;
+  classId?: string;
+  teacherId?: string; // ← new
+}) {
+  const conditions = [];
 
-  async getGrade(id: string): Promise<GradeWithDetails | undefined> {
-    const [result] = await db
-      .select({ grade: grades, student: students, assignment: assignments, class: classes })
-      .from(grades)
-      .innerJoin(students, eq(grades.studentId, students.id))
-      .innerJoin(assignments, eq(grades.assignmentId, assignments.id))
-      .innerJoin(classes, eq(assignments.classId, classes.id))
-      .where(eq(grades.id, id));
+  if (filters.studentId) conditions.push(eq(grades.studentId, filters.studentId));
+  if (filters.assignmentId) conditions.push(eq(grades.assignmentId, filters.assignmentId));
+  if (filters.classId) conditions.push(eq(assignments.classId, filters.classId));
+  if (filters.teacherId) conditions.push(eq(classes.teacherId, filters.teacherId)); // ← apply teacher filter
 
-    if (!result) return undefined;
+  const results = await db
+    .select({ grade: grades, student: students, assignment: assignments, class: classes })
+    .from(grades)
+    .innerJoin(students, eq(grades.studentId, students.id))
+    .innerJoin(assignments, eq(grades.assignmentId, assignments.id))
+    .innerJoin(classes, eq(assignments.classId, classes.id))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(grades.gradedAt));
 
-    return { ...result.grade, student: result.student, assignment: { ...result.assignment, class: result.class } };
-  }
+  return results.map(({ grade, student, assignment, class: cls }) => ({
+    ...grade,
+    student,
+    assignment: { ...assignment, class: cls },
+  }));
+}
 
 async createGrade(grade: InsertGrade): Promise<Grade> {
   // 1️⃣ Check if a grade already exists for this student & assignment
@@ -605,52 +623,56 @@ async createGrade(grade: InsertGrade): Promise<Grade> {
   // -------------------------
   // Dashboard
   // -------------------------
-  async getDashboardStats(teacherId?: string) {
-    const classConditions = teacherId ? [eq(classes.teacherId, teacherId)] : [];
+async getDashboardStats(teacherId?: string) {
+  const classConditions = teacherId ? [eq(classes.teacherId, teacherId)] : [];
 
-    const totalStudentsQuery = await db
-      .select({ count: sql<number>`count(distinct ${students.id})` })
-      .from(students)
-      .innerJoin(enrollments, eq(students.id, enrollments.studentId))
-      .innerJoin(classes, eq(enrollments.classId, classes.id))
-      .where(classConditions.length > 0 ? and(...classConditions) : undefined);
+  // Total students
+  const totalStudentsQuery = await db
+    .select({ count: sql<number>`count(distinct ${students.id})` })
+    .from(students)
+    .innerJoin(enrollments, eq(students.id, enrollments.studentId))
+    .innerJoin(classes, eq(enrollments.classId, classes.id))
+    .where(classConditions.length ? and(...classConditions) : undefined);
+  const totalStudents = totalStudentsQuery[0]?.count || 0;
 
-    const totalStudents = totalStudentsQuery[0]?.count || 0;
+  // Average grade
+  const avgGradeQuery = await db
+    .select({ avg: sql<number>`avg(${grades.percentage})` })
+    .from(grades)
+    .innerJoin(assignments, eq(grades.assignmentId, assignments.id))
+    .innerJoin(classes, eq(assignments.classId, classes.id))
+    .where(classConditions.length ? and(...classConditions) : undefined);
+  const averageGrade = Number(avgGradeQuery[0]?.avg ?? 0); // ✅ convert to number
 
-    const avgGradeQuery = await db
-      .select({ avg: sql<number>`avg(${grades.percentage})` })
-      .from(grades)
-      .innerJoin(assignments, eq(grades.assignmentId, assignments.id))
-      .innerJoin(classes, eq(assignments.classId, classes.id))
-      .where(classConditions.length > 0 ? and(...classConditions) : undefined);
+  // Assignments due
+  const assignmentsDueQuery = await db
+    .select()
+    .from(assignments)
+    .innerJoin(classes, eq(assignments.classId, classes.id))
+    .where(
+      and(
+        sql`${assignments.dueDate} > now()`,
+        ...(classConditions.length ? classConditions : [])
+      )
+    );
+  const assignmentsDue = assignmentsDueQuery.length;
 
-    const avgGrade = avgGradeQuery[0]?.avg;
-    const averageGrade = avgGrade != null ? this.getLetterGrade(avgGrade) : "-";
+  // Active classes
+  const activeClassesQuery = await db
+    .select()
+    .from(classes)
+    .where(classConditions.length ? and(...classConditions) : undefined);
+  const activeClasses = activeClassesQuery.length;
 
-    const nowStr = new Date().toISOString();
-    const weekFromNowStr = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days ahead
+  return {
+    totalStudents,
+    averageGrade: averageGrade.toFixed(2), // ✅ safe now
+    assignmentsDue,
+    activeClasses,
+  };
+}
 
-    const assignmentsDueQuery = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(assignments)
-      .innerJoin(classes, eq(assignments.classId, classes.id))
-      .where(and(
-        ...classConditions,
-        sql`${assignments.dueDate} >= ${nowStr}`,
-        sql`${assignments.dueDate} <= ${weekFromNowStr}`
-      ));
 
-    const assignmentsDue = assignmentsDueQuery[0]?.count || 0;
-
-    const activeClassesQuery = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(classes)
-      .where(classConditions.length > 0 ? and(...classConditions) : undefined);
-
-    const activeClasses = activeClassesQuery[0]?.count || 0;
-
-    return { totalStudents, averageGrade, assignmentsDue, activeClasses };
-  }
 
   async getRecentGrades(limit = 10, teacherId?: string): Promise<GradeWithDetails[]> {
     const results = await db

@@ -75,7 +75,7 @@ if (user?.role === "teacher") {
       <Switch>
         <Route path="/" component={AdminDashboard} />
         <Route path="/students" component={StudentsWithoutAddButton} />
-        <Route path="/classes" component={StudentClasses} />
+        <Route path="/classes" component={Classes} />
         <Route path="/assignments" component={Assignments} />
         <Route path="/grades" component={Grades} />
         <Route component={NotFound} />

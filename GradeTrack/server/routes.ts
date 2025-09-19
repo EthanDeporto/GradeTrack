@@ -72,17 +72,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // -------------------------
   // Student routes
   // -------------------------
-  app.get("/api/students", isAuthenticated, async (req: any, res) => {
-    try {
-      const teacherId = req.user?.role === "admin" ? undefined : req.user?.role.id;
-      const searchQuery = req.query.search as string;
-      const students = await storage.getStudents(teacherId, searchQuery);
-      res.json(students);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Failed to fetch students" });
+// GET /api/students
+app.get("/api/students", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user?.id || req.user?.claims?.sub;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const user = await storage.getUser(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    let students;
+    if (user.role === "admin") {
+      // Admins see all students
+      students = await storage.getStudents();
+    } else {
+      // Teachers only see students in their classes
+      students = await storage.getStudents(userId); // teacherId
     }
-  });
+
+    res.json(students);
+  } catch (error) {
+    console.error("Error fetching students:", error);
+    res.status(500).json({ message: "Failed to fetch students" });
+  }
+});
+
 
   app.get("/api/students/:id", isAuthenticated, async (req, res) => {
     try {
@@ -262,6 +276,33 @@ app.put("/api/teachers/:id", isAuthenticated, async (req, res) => {
     }
   });
 
+// GET /api/teachers/classes - classes for the logged-in teacher
+// GET /api/teachers/classes - classes for the logged-in teacher
+app.get("/api/teachers/classes", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user?.id || req.user?.claims?.sub;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const user = await storage.getUser(userId);
+
+    // check if user exists
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // only allow teachers (and optionally admins) to fetch their classes
+    if (user.role !== "teacher" && user.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const classes = await storage.getTeachersClasses(userId);
+    res.json(classes);
+  } catch (error) {
+    console.error("Error fetching teacher classes:", error);
+    res.status(500).json({ message: "Failed to fetch teacher classes" });
+  }
+});
+
+
+
 // GET all students in a specific class
 app.get("/api/classes/:id/students", isAuthenticated, async (req, res) => {
   try {
@@ -328,16 +369,25 @@ app.get("/api/classes/:id/students", isAuthenticated, async (req, res) => {
   });
 
   // Assignment routes
-  app.get("/api/assignments", isAuthenticated, async (req, res) => {
-    try {
-      const classId = req.query.classId as string;
-      const assignments = await storage.getAssignments(classId);
-      res.json(assignments);
-    } catch (error) {
-      console.error("Error fetching assignments:", error);
-      res.status(500).json({ message: "Failed to fetch assignments" });
-    }
-  });
+  // GET /api/assignments?classId=
+app.get("/api/assignments", isAuthenticated, async (req: any, res) => {
+  const classId = req.query.classId as string | undefined;
+  const userId = req.user?.id || req.user?.claims?.sub;
+  const user = await storage.getUser(userId);
+  const teacherId = user?.role === 'teacher' ? userId : undefined;
+
+  try {
+    const assignments = await storage.getAssignments(classId, teacherId);
+    res.json(assignments);
+  } catch (err) {
+    console.error("Error fetching assignments:", err);
+    res.status(500).json({ message: "Failed to fetch assignments" });
+  }
+});
+
+
+
+
 
   app.get("/api/assignments/:id", isAuthenticated, async (req, res) => {
     try {
@@ -416,20 +466,41 @@ app.get("/api/student/assignments", isAuthenticated, async (req: any, res) => {
 
 
   // Grade routes
-  app.get("/api/grades", isAuthenticated, async (req, res) => {
-    try {
-      const filters = {
-        studentId: req.query.studentId as string,
-        assignmentId: req.query.assignmentId as string,
-        classId: req.query.classId as string,
-      };
-      const grades = await storage.getGrades(filters);
-      res.json(grades);
-    } catch (error) {
-      console.error("Error fetching grades:", error);
-      res.status(500).json({ message: "Failed to fetch grades" });
+app.get("/api/grades", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
     }
-  });
+
+    const user = await storage.getUser(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const filters: {
+      studentId?: string;
+      assignmentId?: string;
+      classId?: string;
+      teacherId?: string;
+    } = {
+      studentId: req.query.studentId as string,
+      assignmentId: req.query.assignmentId as string,
+      classId: req.query.classId as string,
+    };
+
+    // Step 3: only filter by teacherId if user is a teacher
+    if (user.role === "teacher") {
+      filters.teacherId = userId; // ✅ TypeScript knows this is a string now
+    }
+
+    const grades = await storage.getGrades(filters);
+    res.json(grades);
+  } catch (error) {
+    console.error("Error fetching grades:", error);
+    res.status(500).json({ message: "Failed to fetch grades" });
+  }
+});
+
+
 
   app.get("/api/grades/:id", isAuthenticated, async (req, res) => {
     try {
