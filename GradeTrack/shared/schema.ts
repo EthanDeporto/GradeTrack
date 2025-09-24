@@ -226,7 +226,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Student = typeof students.$inferSelect;
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 
-export type Teacher = typeof students.$inferSelect;
+export type Teacher = typeof teachers.$inferSelect;
 export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
 
 export type Class = typeof classes.$inferSelect;
@@ -247,7 +247,7 @@ export type AssignmentWithStudentGrade = AssignmentWithDetails & {
 // Extended types for API responses
 export type StudentWithGrades = Student & {
   enrollments: (Enrollment & { class: Class })[];
-  grades: (Grade & { assignment: Assignment })[];
+  grades: (Grade & { assignment: Assignment  & { class: Class } })[];
   currentGrade?: {
     percentage: number;
     letterGrade: string;

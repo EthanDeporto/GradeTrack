@@ -11,6 +11,7 @@ import { Plus, Search } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { StudentWithGrades } from "@shared/schema";
+import { useLocation } from "wouter";
 
 export default function Students() {
   const { isLoading, isAuthenticated } = useAuth();
@@ -20,6 +21,7 @@ export default function Students() {
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentWithGrades | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
+  const [, navigate] = useLocation(); 
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -89,7 +91,7 @@ const { data: students = [] } = useQuery<StudentWithGrades[]>({
   };
 
   const handleViewStudent = (student: StudentWithGrades) => {
-    // TODO: Navigate to student detail page or open detailed view
+    navigate(`/students/${student.id}`);
     console.log("View student:", student);
   };
 

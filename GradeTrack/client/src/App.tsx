@@ -19,6 +19,7 @@ import StudentAssignments from "@/pages/StudentAssignments";
 import Teachers from "@/pages/Teachers"
 import StudentClasses from "@/pages/StudentClasses";
 import StudentsWithoutAddButton from "@/pages/StudentsWithoutAddButton"
+import StudentDetails from "@/pages/StudentDetails";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -54,6 +55,7 @@ const isLocalAuth = !import.meta.env.VITE_REPLIT_DOMAINS;
         <Route path="/classes" component={Classes} />
         <Route path="/assignments" component={Assignments} />
         <Route path="/grades" component={Grades} />
+        <Route path="/students/:id" component={StudentDetails} />
         <Route component={NotFound} />
       </Switch>
     );
@@ -78,6 +80,7 @@ if (user?.role === "teacher") {
         <Route path="/classes" component={Classes} />
         <Route path="/assignments" component={Assignments} />
         <Route path="/grades" component={Grades} />
+        <Route path="/students/:id" component={StudentDetails} />
         <Route component={NotFound} />
       </Switch>
     );
