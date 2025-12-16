@@ -1,1 +1,1 @@
-A webapp developed using AI that allows users to view, track, and add grades. Users can enjoy a seamless UI that easily allows them to view all the critical information that a student or teacher would need. 
+A webapp developed with AI that allows users to view, track, and add grades. Users can enjoy a seamless UI that easily allows them to view all the critical information that a student or teacher would need. 
